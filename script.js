@@ -228,7 +228,7 @@ let createGlobe;
 
         // Outer Atmospheric Hover Glow (Separate shell, leaves map colors natural)
         const moonGlowMat = new THREE.MeshBasicMaterial({
-            color: 0x7cc4ff,
+            color: 0x9ea0d4, // Nebula Light / Purple Navy Glow
             transparent: true,
             opacity: 0.0,
             side: THREE.BackSide,
