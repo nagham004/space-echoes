@@ -70,14 +70,7 @@ let createGlobe;
         scrollPrompt: document.getElementById('scroll-prompt'),
         scrollDownHint: document.querySelector('.scroll-down-hint'),
         spaceCanvas: document.getElementById('space-canvas'),
-        exploreControls: document.getElementById('explore-controls'),
         btnBackToOverview: document.getElementById('btn-back-to-overview'),
-        btnSwitchMoon: document.getElementById('btn-switch-moon'),
-        btnSwitchMars: document.getElementById('btn-switch-mars'),
-        sectionHeading: document.getElementById('section-heading'),
-        sectionSubheading: document.getElementById('section-subheading'),
-        markersNavLabel: document.getElementById('markers-nav-label'),
-        markerPills: document.getElementById('marker-pills'),
         artifactDrawer: document.getElementById('artifact-drawer'),
         btnCloseDrawer: document.getElementById('btn-close-drawer'),
         artifactTag: document.getElementById('artifact-tag'),
@@ -499,22 +492,15 @@ let createGlobe;
         if (elements.heroTitleSection) {
             elements.heroTitleSection.style.display = 'none';
         }
-        elements.exploreControls.classList.remove('hidden');
+        if (elements.btnBackToOverview) {
+            elements.btnBackToOverview.classList.remove('hidden');
+        }
         document.body.style.overflow = 'hidden';
 
         const strings = uiText[currentLang];
         elements.spaceCanvas.setAttribute('aria-label', body === 'Moon' ? strings.moonSphereAria : strings.marsSphereAria);
 
-        elements.btnSwitchMoon.classList.toggle('active', body === 'Moon');
-        elements.btnSwitchMoon.setAttribute('aria-checked', body === 'Moon' ? 'true' : 'false');
-
-        elements.btnSwitchMars.classList.toggle('active', body === 'Mars');
-        elements.btnSwitchMars.setAttribute('aria-checked', body === 'Mars' ? 'true' : 'false');
-
-        elements.sectionHeading.textContent = body === 'Moon' ? strings.moonSectionTitle : strings.marsSectionTitle;
-        elements.sectionSubheading.textContent = body === 'Moon' ? strings.moonSectionDesc : strings.marsSectionDesc;
-
-        updateMarkerPills();
+        updateAstronautCaption();
         elements.spaceCanvas.focus();
     }
 
@@ -533,46 +519,21 @@ let createGlobe;
         if (elements.heroTitleSection) {
             elements.heroTitleSection.style.display = '';
         }
-        elements.exploreControls.classList.add('hidden');
+        if (elements.btnBackToOverview) {
+            elements.btnBackToOverview.classList.add('hidden');
+        }
         elements.artifactDrawer.classList.add('hidden');
 
         const strings = uiText[currentLang];
         elements.spaceCanvas.setAttribute('aria-label', strings.overviewSphereAria);
 
         onWindowScroll();
+        updateAstronautCaption();
         elements.spaceCanvas.focus();
     }
 
-    /**
-     * Update marker pills toolbar
-     */
-    function updateMarkerPills() {
-        elements.markerPills.innerHTML = '';
-        const meshes = currentBody === 'Moon' ? moonMarkerMeshes : marsMarkerMeshes;
-
-        meshes.forEach((mesh, idx) => {
-            const artifact = mesh.userData.artifact;
-            const name = artifact[currentLang]?.name || artifact.id;
-            const btn = document.createElement('button');
-            btn.className = 'pill-btn' + (idx === currentSelectedMarkerIndex ? ' active' : '');
-            btn.textContent = name;
-            btn.setAttribute('aria-label', name);
-            btn.addEventListener('click', () => {
-                currentSelectedMarkerIndex = idx;
-                rotateActivePlanetToMarker(mesh);
-                openArtifactCard(artifact);
-                highlightActivePill(idx);
-            });
-            elements.markerPills.appendChild(btn);
-        });
-    }
-
-    function highlightActivePill(index) {
-        const pills = elements.markerPills.querySelectorAll('.pill-btn');
-        pills.forEach((p, i) => {
-            p.classList.toggle('active', i === index);
-        });
-    }
+    function updateMarkerPills() {}
+    function highlightActivePill(index) {}
 
     function rotateActivePlanetToMarker(mesh) {
         autoRotate = false;
@@ -1182,21 +1143,14 @@ let createGlobe;
         elements.mainTitle.textContent = strings.siteTitle;
         elements.mainDesc.textContent = strings.siteDesc;
 
-        elements.btnBackToOverview.textContent = strings.backToPlanets;
-        elements.btnSwitchMoon.textContent = strings.planetMoon;
-        elements.btnSwitchMars.textContent = strings.planetMars;
-
-        elements.markersNavLabel.textContent = strings.activeArtifactsCount + ':';
+        if (elements.btnBackToOverview) {
+            elements.btnBackToOverview.textContent = strings.backToPlanets;
+        }
 
         if (viewMode === 'overview') {
-            if (elements.hintText) elements.hintText.textContent = strings.overviewHint;
             elements.spaceCanvas.setAttribute('aria-label', strings.overviewSphereAria);
         } else {
-            if (elements.hintText) elements.hintText.textContent = strings.exploreHint;
             elements.spaceCanvas.setAttribute('aria-label', currentBody === 'Moon' ? strings.moonSphereAria : strings.marsSphereAria);
-            elements.sectionHeading.textContent = currentBody === 'Moon' ? strings.moonSectionTitle : strings.marsSectionTitle;
-            elements.sectionSubheading.textContent = currentBody === 'Moon' ? strings.moonSectionDesc : strings.marsSectionDesc;
-            updateMarkerPills();
         }
 
         elements.btnDiscoverStory.textContent = strings.discoverStory;
@@ -1229,10 +1183,9 @@ let createGlobe;
             });
         }
 
-        // Explore Mode Switcher buttons
-        elements.btnSwitchMoon.addEventListener('click', () => enterExploreMode('Moon'));
-        elements.btnSwitchMars.addEventListener('click', () => enterExploreMode('Mars'));
-        elements.btnBackToOverview.addEventListener('click', exitExploreMode);
+        if (elements.btnBackToOverview) {
+            elements.btnBackToOverview.addEventListener('click', exitExploreMode);
+        }
 
         // Story Drawer controls
         elements.btnDiscoverStory.addEventListener('click', startChapters);

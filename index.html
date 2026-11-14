@@ -24,6 +24,7 @@
 
     <!-- Top navigation bar -->
     <nav class="top-nav" aria-label="الشريط العلوي">
+        <button id="btn-back-to-overview" class="back-nav-btn hidden" aria-label="العودة لنظرة الكواكب">← نظرة عامة على الكواكب</button>
         <button id="lang-toggle" class="lang-btn" aria-label="تبديل اللغة">English</button>
     </nav>
 
@@ -59,30 +60,7 @@
 
         <!-- Section 2: Interactive Planets Stage Area -->
         <section class="planets-view-section" id="planets-view-section">
-            <!-- Explore Mode Controls (Shown when exploring a planet) -->
-            <div id="explore-controls" class="explore-controls hidden">
-                <div class="controls-top-bar">
-                    <button id="btn-back-to-overview" class="back-btn" aria-label="العودة لنظرة الكواكب">← نظرة عامة على الكواكب</button>
-
-                    <!-- Keyboard-navigable Body Switcher -->
-                    <div class="body-switcher" role="radiogroup" aria-label="اختر الجرم السماوي">
-                        <button id="btn-switch-moon" class="toggle-body-btn active" role="radio" aria-checked="true" aria-label="القمر">القمر</button>
-                        <button id="btn-switch-mars" class="toggle-body-btn" role="radio" aria-checked="false" aria-label="المريخ">المريخ</button>
-                    </div>
-                </div>
-
-                <div class="explore-headings-box">
-                    <h2 id="section-heading" class="section-heading">القمر: آثار خطى البشر الأولى</h2>
-                    <p id="section-subheading" class="section-subheading">انقر على إحدى العلامات على سطح القمر أو استخدم لوحة المفاتيح لاستكشاف المركبات المتروكة.</p>
-
-                    <div class="markers-toolbar" role="region" aria-label="قائمة المركبات المعروضة">
-                        <span id="markers-nav-label" class="toolbar-label">المعدات المعروضة على الكرة:</span>
-                        <div id="marker-pills" class="pills-container" role="group" aria-labelledby="markers-nav-label">
-                            <!-- Populated dynamically -->
-                        </div>
-                    </div>
-                </div>
-            </div>
+            <!-- Full unobstructed 3D planetary exploration view -->
         </section>
     </div>
 
