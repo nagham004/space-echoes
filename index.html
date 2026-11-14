@@ -1,42 +1,123 @@
 <!DOCTYPE html>
-<!-- The dirction of the text in English -->
-<html lang="en" dir="ltr">
+<html lang="ar" dir="rtl">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Abandoned but not Forgotten</title>
+    <title>تُركت في صمت، خُلِّدت في العلم | Space Echoes</title>
+    <!-- Three.js r128 from CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <!-- Link CSS stylesheet -->
     <link rel="stylesheet" href="style.css">
 </head>
 
-<body>
-    <!-- Switch language button -->
-    <nav class="top-nav">
-        <button id="lang-toggle" class="lang-btn">عربي</button>
+<body class="space-app">
+    <!-- Skip to main content link for accessibility -->
+    <a href="#space-canvas" class="skip-link">الانتقال إلى المحتوى الرئيسي</a>
+
+    <!-- Top navigation bar -->
+    <nav class="top-nav" aria-label="الشريط العلوي">
+        <button id="lang-toggle" class="lang-btn" aria-label="تبديل اللغة">English</button>
     </nav>
 
-    <!-- Main app container -->
-    <main id="app-container">
-        <header>
-            <!-- Added an id for itle and description -->
-            <h1 id="main-title">Left in Silence, Remembered in Science</h1>
-            <p id="main-desc">Discover the untold stories of NASA's discarded heroes on the Moon and Mars.</p>
-        </header>
+    <!-- Fullscreen 3D Canvas Space Stage (Fixed in Background) -->
+    <div class="fullscreen-space-stage">
+        <!-- Ambient Space Video Background -->
+        <video id="bg-video" class="bg-video" autoplay loop muted playsinline preload="auto" aria-hidden="true">
+            <source src="assets/videos/background.mp4" type="video/mp4">
+        </video>
+        <!-- Overlay tint for subtle contrast and palette blending -->
+        <div class="bg-video-overlay" aria-hidden="true"></div>
+        <canvas id="space-canvas" tabindex="0" role="img"
+            aria-label="عرض تفاعلي ثلاثي الأبعاد للقمر والمريخ. مرر الفأرة على القمر ليتوهج، انقر على المريخ لتبديل موضعه، أو انقر على الجرم للتكبير والاستكشاف."></canvas>
+    </div>
 
-        <!-- Planet selection section -->
-        <section id="destination-selector">
-            <button id="btn-moon" class="planet-btn">Explore The Moon</button>
-            <button id="btn-mars" class="planet-btn">Explore Mars</button>
+    <!-- Scroll Track Container for Cinematic Scrollytelling -->
+    <div class="scroll-track" id="scroll-track">
+        <!-- Section 1: Hero Fullscreen Title (Gradually shrinks and fades on scroll) -->
+        <section class="hero-title-section" id="hero-title-section">
+            <div class="hero-title-content" id="hero-title-content">
+                <h1 id="main-title">تُركت في صمت، خُلِّدت في العلم</h1>
+                <p id="main-desc">اكتشف القصص المجهولة لأبطال ناسا المتروكين على سطح القمر والمريخ.</p>
+                <div class="scroll-down-hint">
+                    <span class="scroll-text" id="scroll-prompt">انزل للأسفل للاستكشاف</span>
+                    <span class="scroll-arrow" aria-hidden="true">↓</span>
+                </div>
+            </div>
         </section>
 
-        <!-- Story and map display area (controlled via JavaScript) -->
-        <section id="story-display" class="hidden">
-            <!-- Story and images will be injected here -->
+        <!-- Section 2: Interactive Planets Stage Area -->
+        <section class="planets-view-section" id="planets-view-section">
+            <!-- Explore Mode Controls (Shown when exploring a planet) -->
+            <div id="explore-controls" class="explore-controls hidden">
+                <div class="controls-top-bar">
+                    <button id="btn-back-to-overview" class="back-btn" aria-label="العودة لنظرة الكواكب">← نظرة عامة على الكواكب</button>
+
+                    <!-- Keyboard-navigable Body Switcher -->
+                    <div class="body-switcher" role="radiogroup" aria-label="اختر الجرم السماوي">
+                        <button id="btn-switch-moon" class="toggle-body-btn active" role="radio" aria-checked="true" aria-label="القمر">القمر</button>
+                        <button id="btn-switch-mars" class="toggle-body-btn" role="radio" aria-checked="false" aria-label="المريخ">المريخ</button>
+                    </div>
+                </div>
+
+                <div class="explore-headings-box">
+                    <h2 id="section-heading" class="section-heading">القمر: آثار خطى البشر الأولى</h2>
+                    <p id="section-subheading" class="section-subheading">انقر على إحدى العلامات على سطح القمر أو استخدم لوحة المفاتيح لاستكشاف المركبات المتروكة.</p>
+
+                    <div class="markers-toolbar" role="region" aria-label="قائمة المركبات المعروضة">
+                        <span id="markers-nav-label" class="toolbar-label">المعدات المعروضة على الكرة:</span>
+                        <div id="marker-pills" class="pills-container" role="group" aria-labelledby="markers-nav-label">
+                            <!-- Populated dynamically -->
+                        </div>
+                    </div>
+                </div>
+            </div>
         </section>
-    </main>
+    </div>
+
+    <!-- Artifact Story Drawer / Modal Dialog -->
+    <section id="artifact-drawer" class="artifact-drawer hidden" aria-labelledby="artifact-title" role="dialog" aria-modal="true">
+        <div class="artifact-card">
+            <button id="btn-close-drawer" class="close-btn" aria-label="إغلاق البطاقة">×</button>
+
+            <!-- Header of Artifact -->
+            <div class="artifact-header">
+                <span id="artifact-tag" class="artifact-tag">القمر</span>
+                <h2 id="artifact-title" class="artifact-title">اسم المركبة</h2>
+                <div class="artifact-meta">
+                    <span id="artifact-year" class="meta-item">السنة: 1969</span>
+                    <span id="artifact-coords" class="meta-item">الإحداثيات: 0.67° N, 23.47° E</span>
+                </div>
+            </div>
+
+            <!-- Intro summary -->
+            <div id="artifact-intro-box" class="artifact-intro-box">
+                <p id="artifact-summary">نبذة عن المركبة وقصتها.</p>
+                <button id="btn-discover-story" class="primary-btn">اكتشف القصة</button>
+            </div>
+
+            <!-- Story chapters container (with aria-live for accessibility) -->
+            <div id="chapters-wrapper" class="chapters-wrapper hidden">
+                <div class="chapter-progress-bar">
+                    <span id="chapter-counter" class="chapter-counter">فصل 1 من 4</span>
+                </div>
+
+                <!-- Chapters Container with aria-live="polite" -->
+                <div id="chapters-container" class="chapters-container" aria-live="polite">
+                    <!-- Chapter dynamic content injected here -->
+                </div>
+
+                <!-- Chapter Navigation -->
+                <div class="chapter-nav">
+                    <button id="btn-prev-chapter" class="nav-step-btn hidden">الفصل السابق</button>
+                    <button id="btn-next-chapter" class="nav-step-btn primary-btn">الفصل التالي</button>
+                </div>
+            </div>
+        </div>
+    </section>
 
     <!-- Link JavaScript files (Data first, then main script) -->
+    <script src="textures-data.js"></script>
     <script src="data.js"></script>
     <script src="script.js"></script>
 </body>
