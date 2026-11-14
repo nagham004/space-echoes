@@ -6,9 +6,9 @@
 
 const uiText = {
     en: {
-        siteTitle: "Journeys Ended... Stories That Never Ended",
-        siteTitlePrefix: "Journeys Ended... ",
-        siteTitleHighlight: "Stories That Never Ended",
+        siteTitle: "Left in Silence, Remembered in Science",
+        siteTitlePrefix: "Left in Silence, ",
+        siteTitleHighlight: "Remembered in Science",
         siteDesc: "Traces of NASA missions still stand witness to humanity's greatest adventures beyond Earth.",
         exploreMoon: "Explore The Moon",
         exploreMars: "Explore Mars",
@@ -61,9 +61,9 @@ const uiText = {
         langSwitchedAnnouncement: "Switched to English"
     },
     ar: {
-        siteTitle: "رحلات انتهت... وحكايات لم تنتهِ",
-        siteTitlePrefix: "رحلات انتهت... ",
-        siteTitleHighlight: "وحكايات لم تنتهِ",
+        siteTitle: "تُركت في صمت، خُلِّدت في العلم",
+        siteTitlePrefix: "تُركت في صمت، ",
+        siteTitleHighlight: "خُلِّدت في العلم",
         siteDesc: "ما زالت آثار بعثات ناسا شاهدة على أعظم مغامرات الإنسان خارج الأرض.",
         exploreMoon: "استكشف القمر",
         exploreMars: "استكشف المريخ",

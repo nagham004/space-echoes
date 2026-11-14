@@ -153,8 +153,8 @@ const MODEL_CONFIGS = {
     const mouseVector = new THREE.Vector2();
 
     // Actual file paths in project
-    const MOON_TEX_PATH = 'assets/images/Moon/lroc_color_2k.jpg';
-    const MARS_TEX_PATH = 'assets/images/Mars/mars_color_2k.jpg';
+    const MOON_TEX_PATH = 'assets/images/Moon/moon-photo.jpg';
+    const MARS_TEX_PATH = 'assets/images/Mars/mars-photo.jpg';
     const ASTRONAUT_MODEL_PATH = 'assets/models/astronaut.glb';
 
     // DOM Elements
@@ -185,6 +185,7 @@ const MODEL_CONFIGS = {
         storyTitle: document.getElementById('story-title'),
         storyScrim: document.getElementById('story-scrim'),
         btnStoryNext: document.getElementById('btn-story-next'),
+        btnVoiceToggle: document.getElementById('btn-voice-toggle'),
         quizContainer: document.getElementById('quiz-container'),
         quizBadge: document.getElementById('quiz-badge'),
         quizProgress: document.getElementById('quiz-progress'),
@@ -1500,6 +1501,7 @@ const MODEL_CONFIGS = {
     let typeWriterTimer = null;
     let typeWriterSkipFn = null;
     const TYPEWRITER_SPEED_MS = 20;
+    let voiceEnabled = true;
 
     function prefersReducedMotion() {
         return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -2124,10 +2126,116 @@ const MODEL_CONFIGS = {
         root.querySelector('.story-next-btn').textContent = index === total - 1 ? labels.done : labels.next;
     }
 
+    function updateVoiceToggleUI() {
+        if (!elements.btnVoiceToggle) return;
+        const isAr = currentLang === 'ar';
+        elements.btnVoiceToggle.setAttribute('aria-pressed', voiceEnabled ? 'true' : 'false');
+        elements.btnVoiceToggle.textContent = voiceEnabled ? '🔊' : '🔇';
+        elements.btnVoiceToggle.setAttribute(
+            'aria-label',
+            voiceEnabled
+                ? (isAr ? 'إيقاف صوت رائد الفضاء' : 'Mute astronaut voice')
+                : (isAr ? 'تشغيل صوت رائد الفضاء' : 'Enable astronaut voice')
+        );
+    }
+
+    function stopStorySpeech() {
+        if ('speechSynthesis' in window) {
+            window.speechSynthesis.cancel();
+        }
+        if (astronautGroup && typeof astronautGroup.setSpeaking === 'function') {
+            astronautGroup.setSpeaking(false);
+        }
+    }
+
+    let cachedVoices = [];
+    if ('speechSynthesis' in window) {
+        const refreshVoices = () => {
+            cachedVoices = window.speechSynthesis.getVoices() || [];
+        };
+        refreshVoices();
+        if (typeof window.speechSynthesis.addEventListener === 'function') {
+            window.speechSynthesis.addEventListener('voiceschanged', refreshVoices);
+        }
+    }
+
+    function scoreVoice(voice, lang) {
+        const name = (voice.name || '').toLowerCase();
+        const vLang = (voice.lang || '').toLowerCase();
+        let score = 0;
+
+        if (name.includes('natural')) score += 100;
+        if (name.includes('online') || name.includes('neural')) score += 80;
+        if (name.includes('google')) score += 60;
+        if (!voice.localService) score += 25;
+
+        if (lang === 'ar') {
+            if (name.includes('hamed')) score += 200;
+            else if (/(zariyah|salma|shakir|maged|tarik|laila|hamza|bassel|rana)/.test(name)) score += 45;
+            if (vLang === 'ar-sa') score += 20;
+            else if (vLang === 'ar-eg' || vLang === 'ar-ae') score += 12;
+        } else {
+            if (/(aria|guy|jenny|andrew|ava|samantha|daniel)/.test(name)) score += 45;
+            if (vLang === 'en-us') score += 20;
+            else if (vLang === 'en-gb') score += 12;
+        }
+
+        if (voice.default) score += 5;
+        return score;
+    }
+
+    function selectBestVoice(langPrefix) {
+        const liveVoices = window.speechSynthesis.getVoices();
+        const voices = (liveVoices && liveVoices.length > 0) ? liveVoices : cachedVoices;
+        const candidates = voices.filter(v => v.lang && v.lang.toLowerCase().startsWith(langPrefix));
+        if (!candidates.length) return null;
+        candidates.sort((a, b) => scoreVoice(b, langPrefix) - scoreVoice(a, langPrefix));
+        return candidates[0];
+    }
+
+    function speakStoryText(text) {
+        if (!('speechSynthesis' in window) || !voiceEnabled) return;
+        const clean = String(text || '').trim();
+        if (!clean) return;
+
+        window.speechSynthesis.cancel();
+        const utter = new SpeechSynthesisUtterance(clean);
+        const langPrefix = currentLang === 'ar' ? 'ar' : 'en';
+        utter.rate = 1.0;
+        utter.pitch = 1.0;
+
+        const match = selectBestVoice(langPrefix);
+        if (match) {
+            utter.voice = match;
+            utter.lang = match.lang;
+        } else {
+            utter.lang = currentLang === 'ar' ? 'ar-SA' : 'en-US';
+        }
+
+        utter.onstart = () => {
+            if (astronautGroup && typeof astronautGroup.setSpeaking === 'function') {
+                astronautGroup.setSpeaking(true);
+            }
+        };
+        utter.onend = () => {
+            if (astronautGroup && typeof astronautGroup.setSpeaking === 'function') {
+                astronautGroup.setSpeaking(false);
+            }
+        };
+        utter.onerror = () => {
+            if (astronautGroup && typeof astronautGroup.setSpeaking === 'function') {
+                astronautGroup.setSpeaking(false);
+            }
+        };
+
+        window.speechSynthesis.speak(utter);
+    }
+
     function stopTypeWriter() {
         clearTimeout(typeWriterTimer);
         typeWriterTimer = null;
         typeWriterSkipFn = null;
+        stopStorySpeech();
         if (elements.btnStoryNext) {
             elements.btnStoryNext.disabled = false;
             elements.btnStoryNext.style.opacity = '';
@@ -2229,6 +2337,7 @@ const MODEL_CONFIGS = {
             };
 
             typeNextParagraph(0);
+            speakStoryText(page.atoms.join(' '));
         }
     }
 
@@ -2385,6 +2494,7 @@ const MODEL_CONFIGS = {
     /** Start MCQ Quiz after finishing the story slides. */
     function startQuiz() {
         if (!currentArtifact) return;
+        stopTypeWriter();
         const quizData = (currentArtifact[currentLang] && currentArtifact[currentLang].quiz)
             || (currentArtifact.ar && currentArtifact.ar.quiz);
         if (!Array.isArray(quizData) || quizData.length === 0) {
@@ -2589,6 +2699,7 @@ const MODEL_CONFIGS = {
         storyBusy = false;
         if (elements.storyLive) elements.storyLive.classList.remove('is-fading');
         elements.btnCloseDrawer.setAttribute('aria-label', t('closeStory'));
+        updateVoiceToggleUI();
         fillIntroCard(currentArtifact);
         if (quizActive && currentArtifact) {
             const updatedQuiz = (currentArtifact[currentLang] && currentArtifact[currentLang].quiz)
@@ -2885,6 +2996,21 @@ const MODEL_CONFIGS = {
         // Story Drawer controls
         elements.btnDiscoverStory.addEventListener('click', startStory);
         elements.btnStoryNext.addEventListener('click', handleStoryNext);
+        if (elements.btnVoiceToggle) {
+            updateVoiceToggleUI();
+            elements.btnVoiceToggle.addEventListener('click', () => {
+                voiceEnabled = !voiceEnabled;
+                updateVoiceToggleUI();
+                if (!voiceEnabled) {
+                    stopStorySpeech();
+                } else {
+                    const page = storyPages[storyPageIndex];
+                    if (page && page.kind === 'text' && Array.isArray(page.atoms)) {
+                        speakStoryText(page.atoms.join(' '));
+                    }
+                }
+            });
+        }
         if (elements.storyPanel) {
             elements.storyPanel.addEventListener('click', e => {
                 if (typeWriterSkipFn && !e.target.closest('button, a')) {
