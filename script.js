@@ -26,6 +26,7 @@ let createGlobe;
     let moonMarkerMeshes = [];
     let marsMarkerMeshes = [];
     let hoveredMarker = null;
+    let astronautGroup;
 
     // Smooth Lerp Targets
     const targets = {
@@ -35,7 +36,10 @@ let createGlobe;
         marsScale: 0.88,
         cameraPos: new THREE.Vector3(0, 0, 4.4),
         moonGlow: 0.0,
-        marsGlow: 0.0
+        marsGlow: 0.0,
+        astronautPos: new THREE.Vector3(0.85, -0.15, 1.0),
+        astronautScale: 0.55,
+        astronautRotY: -0.4
     };
 
     let autoRotate = !matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -53,6 +57,7 @@ let createGlobe;
     // Actual file paths in project
     const MOON_TEX_PATH = 'assets/images/Moon/lroc_color_2k.jpg';
     const MARS_TEX_PATH = 'assets/images/Mars/mars_color_2k.jpg';
+    const ASTRONAUT_MODEL_PATH = 'assets/models/astronaut.glb';
 
     // DOM Elements
     const elements = {
@@ -86,7 +91,9 @@ let createGlobe;
         chapterCounter: document.getElementById('chapter-counter'),
         chaptersContainer: document.getElementById('chapters-container'),
         btnPrevChapter: document.getElementById('btn-prev-chapter'),
-        btnNextChapter: document.getElementById('btn-next-chapter')
+        btnNextChapter: document.getElementById('btn-next-chapter'),
+        astronautCaption: document.getElementById('astronaut-caption'),
+        astronautCaptionText: document.getElementById('astronaut-caption-text')
     };
 
     /**
@@ -199,13 +206,18 @@ let createGlobe;
 
         // Balanced natural lighting matching reference (moon.html)
         // Soft ambient light
-        const ambientLight = new THREE.AmbientLight(0xffffff, 0.35);
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
         scene.add(ambientLight);
 
         // Natural Sun directional light
-        const sun = new THREE.DirectionalLight(0xffffff, 1.1);
+        const sun = new THREE.DirectionalLight(0xffffff, 1.15);
         sun.position.set(5, 2.5, 5);
         scene.add(sun);
+
+        // Astronaut & celestial fill light
+        const fillLight = new THREE.DirectionalLight(0xdde3f5, 0.65);
+        fillLight.position.set(-4, 3, 4);
+        scene.add(fillLight);
 
         // 1. Build Moon Sphere with Authentic Map Texture
         moonGroup = new THREE.Group();
@@ -278,6 +290,9 @@ let createGlobe;
         marsGroup.add(marsMarkersGroup);
         buildMarkersForBody('Mars', marsMarkersGroup, marsMarkerMeshes);
 
+        // 3. Load Astronaut 3D Model
+        loadAstronautModel();
+
         setupControls();
         resizeStage();
         window.addEventListener('resize', resizeStage);
@@ -342,6 +357,84 @@ let createGlobe;
     }
 
     /**
+     * Update Floating Astronaut Caption Text & Theme
+     */
+    function updateAstronautCaption() {
+        if (!elements.astronautCaption || !elements.astronautCaptionText) return;
+        const strings = uiText[currentLang];
+
+        if (viewMode === 'explore' || planetEntrance < 0.25) {
+            elements.astronautCaption.classList.add('hidden-caption');
+            return;
+        }
+
+        elements.astronautCaption.classList.remove('hidden-caption');
+
+        if (activeForeground === 'Moon') {
+            elements.astronautCaption.classList.add('moon-theme');
+            elements.astronautCaption.classList.remove('mars-theme');
+            elements.astronautCaptionText.textContent = strings.moonQuote;
+        } else {
+            elements.astronautCaption.classList.add('mars-theme');
+            elements.astronautCaption.classList.remove('moon-theme');
+            elements.astronautCaptionText.textContent = strings.marsQuote;
+        }
+    }
+
+    /**
+     * Load Astronaut 3D Model (GLTF)
+     */
+    function loadAstronautModel() {
+        astronautGroup = new THREE.Group();
+        astronautGroup.position.copy(targets.astronautPos);
+        astronautGroup.scale.set(0, 0, 0);
+        astronautGroup.visible = false;
+        scene.add(astronautGroup);
+
+        if (typeof THREE.GLTFLoader === 'undefined') {
+            console.warn('THREE.GLTFLoader is not available');
+            return;
+        }
+
+        const loader = new THREE.GLTFLoader();
+        loader.load(
+            ASTRONAUT_MODEL_PATH,
+            gltf => {
+                const model = gltf.scene || (gltf.scenes && gltf.scenes[0]);
+                if (!model) return;
+
+                const box = new THREE.Box3().setFromObject(model);
+                const center = box.getCenter(new THREE.Vector3());
+                const size = box.getSize(new THREE.Vector3());
+                const maxDim = Math.max(size.x, size.y, size.z) || 1;
+                const normScale = 1.45 / maxDim;
+
+                model.position.x = -center.x * normScale;
+                model.position.y = -center.y * normScale;
+                model.position.z = -center.z * normScale;
+                model.scale.set(normScale, normScale, normScale);
+
+                model.traverse(node => {
+                    if (node.isMesh) {
+                        node.castShadow = true;
+                        node.receiveShadow = true;
+                        if (node.material) {
+                            node.material.roughness = 0.55;
+                            node.material.metalness = 0.2;
+                        }
+                    }
+                });
+
+                astronautGroup.add(model);
+            },
+            undefined,
+            err => {
+                console.error('Failed to load astronaut model:', err);
+            }
+        );
+    }
+
+    /**
      * Swap foreground planet in Overview mode
      */
     function swapForeground(newForeground) {
@@ -353,13 +446,23 @@ let createGlobe;
 
             targets.marsPos.set(1.6, 0.8, -2.0);
             targets.marsScale = 0.88;
+
+            // Astronaut floats to the right of Moon
+            targets.astronautPos.set(0.85, -0.15, 1.0);
+            targets.astronautRotY = -0.4;
         } else {
             targets.marsPos.set(0.7, -0.15, 0.5);
             targets.marsScale = 1.3;
 
             targets.moonPos.set(-1.6, 0.8, -2.0);
             targets.moonScale = 0.88;
+
+            // Astronaut floats to the other side (left of Mars)
+            targets.astronautPos.set(-0.85, -0.15, 1.0);
+            targets.astronautRotY = 0.4;
         }
+
+        updateAstronautCaption();
     }
 
     /**
@@ -738,6 +841,8 @@ let createGlobe;
         // Phase 2: Planets rise and appear (starts at 0.15, fully entered by 0.9)
         const entranceRaw = Math.min(1, Math.max(0, (scrollProgress - 0.15) / 0.75));
         planetEntrance = 1 - Math.pow(1 - entranceRaw, 3);
+
+        updateAstronautCaption();
     }
 
     /**
@@ -822,6 +927,33 @@ let createGlobe;
                     m.userData.halo.scale.set(s, s, s);
                 }
             });
+        }
+
+        // 5. Astronaut Zero-Gravity Floating & Dynamic Lerping
+        if (astronautGroup) {
+            const time = Date.now() * 0.0016;
+            const floatY = Math.sin(time) * 0.07;
+            const floatZ = Math.cos(time * 0.7) * 0.04;
+            const tiltX = Math.sin(time * 0.5) * 0.06;
+            const tiltZ = Math.cos(time * 0.7) * 0.05;
+
+            const yScrollOffset = (viewMode === 'overview') ? (1 - planetEntrance) * -4.2 : 0;
+            const targetX = targets.astronautPos.x;
+            const targetY = targets.astronautPos.y + floatY + yScrollOffset;
+            const targetZ = targets.astronautPos.z + floatZ;
+
+            astronautGroup.position.x += (targetX - astronautGroup.position.x) * 0.055;
+            astronautGroup.position.y += (targetY - astronautGroup.position.y) * 0.055;
+            astronautGroup.position.z += (targetZ - astronautGroup.position.z) * 0.055;
+
+            astronautGroup.rotation.y += (targets.astronautRotY - astronautGroup.rotation.y) * 0.055;
+            astronautGroup.rotation.x = tiltX;
+            astronautGroup.rotation.z = tiltZ;
+
+            const targetScale = (viewMode === 'overview' ? planetEntrance : 0.0) * targets.astronautScale;
+            const curScale = astronautGroup.scale.x + (targetScale - astronautGroup.scale.x) * 0.08;
+            astronautGroup.scale.set(curScale, curScale, curScale);
+            astronautGroup.visible = curScale > 0.01;
         }
 
         renderer.render(scene, camera);
@@ -1074,6 +1206,8 @@ let createGlobe;
         if (elements.scrollPrompt && strings.scrollPrompt) {
             elements.scrollPrompt.textContent = strings.scrollPrompt;
         }
+
+        updateAstronautCaption();
     }
 
     /**

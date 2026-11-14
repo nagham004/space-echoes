@@ -124,6 +124,75 @@ body.space-app {
     outline-offset: -5px;
 }
 
+/* Floating Astronaut Quote / Caption */
+.astronaut-caption {
+    position: absolute;
+    z-index: 5;
+    pointer-events: none;
+    padding: 11px 26px;
+    border-radius: 35px;
+    font-size: clamp(1.1rem, 2.2vw, 1.55rem);
+    font-weight: 700;
+    letter-spacing: 0.3px;
+    white-space: nowrap;
+    backdrop-filter: blur(12px);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+    transition: 
+        left 1.2s cubic-bezier(0.22, 1, 0.36, 1),
+        right 1.2s cubic-bezier(0.22, 1, 0.36, 1),
+        top 1.2s cubic-bezier(0.22, 1, 0.36, 1),
+        transform 1.2s cubic-bezier(0.22, 1, 0.36, 1),
+        opacity 0.6s ease,
+        color 0.6s ease,
+        border-color 0.6s ease,
+        background-color 0.6s ease;
+    will-change: transform, left, right, top, opacity;
+}
+
+/* When Moon is foreground (astronaut is on the right of the Moon) */
+.astronaut-caption.moon-theme {
+    top: 50%;
+    right: 18%;
+    left: auto;
+    transform: translateY(-50%) translateZ(0);
+    color: #e2e6f0; /* Lunar silvery gray */
+    background: rgba(31, 36, 76, 0.72);
+    border: 1px solid rgba(226, 230, 240, 0.45);
+    text-shadow: 0 0 16px rgba(226, 230, 240, 0.6), 0 2px 8px rgba(0, 0, 0, 0.95);
+    box-shadow: 0 10px 30px rgba(16, 17, 38, 0.8), 0 0 25px rgba(158, 160, 212, 0.25);
+}
+
+/* When Mars is foreground (astronaut floats to the other side / near Mars) */
+.astronaut-caption.mars-theme {
+    top: 50%;
+    left: 18%;
+    right: auto;
+    transform: translateY(-50%) translateZ(0);
+    color: #ff854d; /* Martian orange to rusty brown */
+    background: rgba(45, 20, 15, 0.8);
+    border: 1px solid rgba(255, 133, 77, 0.5);
+    text-shadow: 0 0 18px rgba(255, 112, 67, 0.7), 0 2px 8px rgba(0, 0, 0, 0.95);
+    box-shadow: 0 10px 30px rgba(16, 17, 38, 0.8), 0 0 25px rgba(255, 90, 54, 0.35);
+}
+
+/* Hidden state (during Hero title or Explore mode) */
+.astronaut-caption.hidden-caption {
+    opacity: 0 !important;
+    pointer-events: none !important;
+    transform: translateY(-30%) scale(0.9) !important;
+}
+
+@media (max-width: 900px) {
+    .astronaut-caption.moon-theme {
+        right: 8%;
+        top: 70%;
+    }
+    .astronaut-caption.mars-theme {
+        left: 8%;
+        top: 70%;
+    }
+}
+
 /* Fixed Top Navigation Bar */
 .top-nav {
     position: fixed;

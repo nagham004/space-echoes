@@ -65,7 +65,9 @@ const uiText = {
         inBackTag: "In Background (Click to swap)",
         clickToExplore: "Click to zoom & explore →",
         clickToBringForward: "Click to bring forward →",
-        scrollPrompt: "Scroll down to explore"
+        scrollPrompt: "Scroll down to explore",
+        moonQuote: "Eternal footprints on silver soil",
+        marsQuote: "A journey into the heart of red dust"
     },
     ar: {
         siteTitle: "تُركت في صمت، خُلِّدت في العلم",
@@ -105,7 +107,9 @@ const uiText = {
         inBackTag: "في الخلف (انقر للتقديم)",
         clickToExplore: "انقر للتكبير والاستكشاف ←",
         clickToBringForward: "انقر لتقديمه للأمام ←",
-        scrollPrompt: "انزل للأسفل للاستكشاف"
+        scrollPrompt: "انزل للأسفل للاستكشاف",
+        moonQuote: "آثار خالدة على تربة فضية",
+        marsQuote: "رحلة في قلب الغبار الأحمر"
     }
 };
 

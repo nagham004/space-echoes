@@ -7,6 +7,13 @@
     <title>تُركت في صمت، خُلِّدت في العلم | Space Echoes</title>
     <!-- Three.js r128 from CDN -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <!-- Three.js GLTFLoader (CDN with local fallback) -->
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+    <script>
+        if (typeof THREE.GLTFLoader === 'undefined') {
+            document.write('<script src="assets/js/GLTFLoader.js"><\/script>');
+        }
+    </script>
     <!-- Link CSS stylesheet -->
     <link rel="stylesheet" href="style.css">
 </head>
@@ -28,6 +35,10 @@
         </video>
         <!-- Overlay tint for subtle contrast and palette blending -->
         <div class="bg-video-overlay" aria-hidden="true"></div>
+        <!-- Floating Astronaut Quote / Caption -->
+        <div id="astronaut-caption" class="astronaut-caption moon-theme hidden-caption" aria-live="polite">
+            <span id="astronaut-caption-text" class="caption-text">آثار خالدة على تربة فضية</span>
+        </div>
         <canvas id="space-canvas" tabindex="0" role="img"
             aria-label="عرض تفاعلي ثلاثي الأبعاد للقمر والمريخ. مرر الفأرة على القمر ليتوهج، انقر على المريخ لتبديل موضعه، أو انقر على الجرم للتكبير والاستكشاف."></canvas>
     </div>
