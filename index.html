@@ -17,6 +17,8 @@
 </head>
 
 <body class="space-app">
+    <!-- Procedural CSS Nebula Backdrop (Fixed behind all content) -->
+    <div id="space-bg" aria-hidden="true"></div>
     <!-- Starfield 3D Celestial Background Canvas (Fixed behind all content) -->
     <canvas id="starfield" aria-hidden="true"></canvas>
 
@@ -39,6 +41,10 @@
         <div id="astronaut-a11y" role="img" aria-label="رائد فضاء ناسا يطفو في الفضاء بجانب الكوكب" class="sr-only"></div>
         <canvas id="space-canvas" tabindex="0" role="img"
             aria-label="عرض تفاعلي ثلاثي الأبعاد للقمر والمريخ. مرر الفأرة على القمر ليتوهج، انقر على المريخ لتبديل موضعه، أو انقر على الجرم للتكبير والاستكشاف."></canvas>
+        <!-- Floating Tooltip for 3D Surface Markers -->
+        <div id="marker-tooltip" class="marker-tooltip hidden" aria-hidden="true"></div>
+        <!-- Accessible Keyboard Navigation for Artifacts -->
+        <nav id="a11y-artifacts-nav" class="sr-only" aria-label="قائمة المركبات الفضائية المستكشفة"></nav>
     </div>
 
     <!-- Scroll Track Container for Cinematic Scrollytelling -->
@@ -61,12 +67,13 @@
         </section>
     </div>
 
-    <!-- Artifact Story Drawer / Modal Dialog -->
+    <!-- Artifact showcase: close button, summary card and paged story text (all on the left) -->
     <section id="artifact-drawer" class="artifact-drawer hidden" aria-labelledby="artifact-title" role="dialog" aria-modal="true">
-        <div class="artifact-card">
-            <button id="btn-close-drawer" class="close-btn" aria-label="إغلاق البطاقة">×</button>
+        <button id="btn-close-drawer" class="close-btn" type="button" aria-label="إغلاق">×</button>
+        <div id="story-scrim" class="story-scrim" aria-hidden="true"></div>
 
-            <!-- Header of Artifact -->
+        <!-- Summary card (shown right after the camera reaches the marker) -->
+        <div class="artifact-card is-off">
             <div class="artifact-header">
                 <span id="artifact-tag" class="artifact-tag">القمر</span>
                 <h2 id="artifact-title" class="artifact-title">اسم المركبة</h2>
@@ -74,30 +81,28 @@
                     <span id="artifact-year" class="meta-item">السنة: 1969</span>
                     <span id="artifact-coords" class="meta-item">الإحداثيات: 0.67° N, 23.47° E</span>
                 </div>
+                <p id="artifact-scale-note" class="scale-note">الحجم مكبّر للتوضيح</p>
             </div>
 
-            <!-- Intro summary -->
             <div id="artifact-intro-box" class="artifact-intro-box">
                 <p id="artifact-summary">نبذة عن المركبة وقصتها.</p>
-                <button id="btn-discover-story" class="primary-btn">اكتشف القصة</button>
+                <button id="btn-discover-story" class="primary-btn" type="button">اكتشف القصة</button>
             </div>
+        </div>
 
-            <!-- Story chapters container (with aria-live for accessibility) -->
-            <div id="chapters-wrapper" class="chapters-wrapper hidden">
-                <div class="chapter-progress-bar">
-                    <span id="chapter-counter" class="chapter-counter">فصل 1 من 4</span>
+        <!-- Story text: placed directly on the scene, one small page at a time, no scrolling -->
+        <div id="story-panel" class="story-panel is-off">
+            <div id="story-live" class="story-live" aria-live="polite" aria-atomic="true">
+                <p class="story-kicker"></p>
+                <h3 id="story-title" class="story-title" tabindex="-1"></h3>
+                <div class="story-body"></div>
+            </div>
+            <div class="story-footer">
+                <div class="story-progress">
+                    <span class="story-progress-text"></span>
+                    <span class="story-progress-track"><span class="story-progress-fill"></span></span>
                 </div>
-
-                <!-- Chapters Container with aria-live="polite" -->
-                <div id="chapters-container" class="chapters-container" aria-live="polite">
-                    <!-- Chapter dynamic content injected here -->
-                </div>
-
-                <!-- Chapter Navigation -->
-                <div class="chapter-nav">
-                    <button id="btn-prev-chapter" class="nav-step-btn hidden">الفصل السابق</button>
-                    <button id="btn-next-chapter" class="nav-step-btn primary-btn">الفصل التالي</button>
-                </div>
+                <button id="btn-story-next" class="story-next-btn primary-btn" type="button"></button>
             </div>
         </div>
     </section>

@@ -26,6 +26,8 @@ const SCROLL_SPEED = 0.0004;
     // Smooth scroll interpolation values
     let targetY = 0;
     let currentY = 0;
+    let targetScrollNorm = 0;
+    let currentScrollNorm = 0;
 
     /**
      * Circular soft star texture using offscreen canvas (prevents square particle boxes)
@@ -70,12 +72,18 @@ const SCROLL_SPEED = 0.0004;
             { count: Math.round(totalStars * 0.10), size: isMobile ? 3.4 : 4.2, opacity: 1.00, minR: 350, maxR: 750 }
         ];
 
+        // ~70% slightly tinted white, ~30% mix of --c1 (#D8CAD5), --c5 (#A2D2DD), and --c4 (#878BBF)
         const colorPalette = [
-            { r: 0.88, g: 0.93, b: 1.00 }, // Soft blue
-            { r: 0.88, g: 0.93, b: 1.00 },
-            { r: 0.88, g: 0.93, b: 1.00 },
-            { r: 1.00, g: 0.95, b: 0.88 }, // Pale gold
-            { r: 1.00, g: 1.00, b: 1.00 }  // White
+            { r: 0.97, g: 0.97, b: 1.00 },
+            { r: 0.98, g: 0.97, b: 0.99 },
+            { r: 0.96, g: 0.98, b: 1.00 },
+            { r: 0.99, g: 0.98, b: 0.97 },
+            { r: 0.97, g: 0.98, b: 1.00 },
+            { r: 0.98, g: 0.98, b: 1.00 },
+            { r: 1.00, g: 0.99, b: 0.98 },
+            { r: 0.847, g: 0.792, b: 0.835 }, // --c1 (#D8CAD5)
+            { r: 0.635, g: 0.824, b: 0.867 }, // --c5 (#A2D2DD)
+            { r: 0.529, g: 0.545, b: 0.749 }  // --c4 (#878BBF)
         ];
 
         layers.forEach(layer => {
@@ -136,17 +144,22 @@ const SCROLL_SPEED = 0.0004;
 
         if (!isReducedMotion) {
             const diff = targetY - currentY;
+            const scrollDiff = targetScrollNorm - currentScrollNorm;
 
             // If the difference is still noticeable, keep smoothing
-            if (Math.abs(diff) > 0.00001) {
+            if (Math.abs(diff) > 0.00001 || Math.abs(scrollDiff) > 0.0001) {
                 currentY += diff * 0.08;
+                currentScrollNorm += scrollDiff * 0.08;
                 starGroup.rotation.y = currentY;
+                document.documentElement.style.setProperty('--scroll', currentScrollNorm.toFixed(4));
                 renderFrame();
                 animId = requestAnimationFrame(renderLoop);
             } else {
                 // Smoothing finished: snap to target, render once, and stop loop
                 currentY = targetY;
+                currentScrollNorm = targetScrollNorm;
                 starGroup.rotation.y = currentY;
+                document.documentElement.style.setProperty('--scroll', currentScrollNorm.toFixed(4));
                 renderFrame();
                 isRunning = false;
                 animId = null;
@@ -179,7 +192,9 @@ const SCROLL_SPEED = 0.0004;
     function onScroll() {
         if (isReducedMotion || !starGroup) return;
         const scrollY = window.scrollY || window.pageYOffset || 0;
+        const maxScroll = Math.max(1, document.documentElement.scrollHeight - window.innerHeight);
         targetY = scrollY * SCROLL_SPEED;
+        targetScrollNorm = Math.min(1, Math.max(0, scrollY / maxScroll));
         startLoop();
     }
 
@@ -223,11 +238,11 @@ const SCROLL_SPEED = 0.0004;
         renderer = new THREE.WebGLRenderer({
             canvas: canvas,
             antialias: false,
-            alpha: false,
+            alpha: true,
             powerPreference: 'low-power'
         });
 
-        renderer.setClearColor(0x05060a, 1.0);
+        renderer.setClearColor(0x000000, 0);
         renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
         renderer.setSize(window.innerWidth, window.innerHeight, false);
 
@@ -240,6 +255,9 @@ const SCROLL_SPEED = 0.0004;
             if (isReducedMotion) {
                 stopLoop();
                 currentY = 0;
+                currentScrollNorm = 0;
+                targetScrollNorm = 0;
+                document.documentElement.style.setProperty('--scroll', '0');
                 if (starGroup) starGroup.rotation.y = 0;
                 renderFrame();
             }
@@ -250,8 +268,14 @@ const SCROLL_SPEED = 0.0004;
 
         // Initial scroll position alignment
         const initialScrollY = window.scrollY || window.pageYOffset || 0;
+        const maxInitialScroll = Math.max(1, document.documentElement.scrollHeight - window.innerHeight);
         targetY = initialScrollY * SCROLL_SPEED;
         currentY = targetY;
+        targetScrollNorm = Math.min(1, Math.max(0, initialScrollY / maxInitialScroll));
+        currentScrollNorm = targetScrollNorm;
+        if (!isReducedMotion) {
+            document.documentElement.style.setProperty('--scroll', currentScrollNorm.toFixed(4));
+        }
         if (starGroup && !isReducedMotion) {
             starGroup.rotation.y = currentY;
         }

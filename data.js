@@ -118,7 +118,7 @@ const spaceArtifacts = [
         id: "apollo_lm",
         location: "Moon",
         image: "assets/images/apollo_lm.png",
-        model3d: "assets/models/apollo_lm.glb", // اتركوه فارغاً "" إذا لم يتوفر مجسم
+        model3d: "assets/models/Moon/apollo-lunar-module/apollo_lm.glb", // اتركوه فارغاً "" إذا لم يتوفر مجسم
         coordinates: {
             lat: 0.67416,
             lng: 23.47314
@@ -224,7 +224,7 @@ const spaceArtifacts = [
         id: "lrv",
         location: "Moon",
         image: "assets/images/lrv.png",
-        model3d: "assets/models/lrv.glb",
+        model3d: "assets/models/Moon/lunar-roving-vehicles/lunar_rover_3d_model.glb",
         coordinates: {
             lat: 26.1322,
             lng: 3.6339
@@ -328,7 +328,7 @@ const spaceArtifacts = [
         id: "spirit",
         location: "Mars",
         image: "assets/images/spirit.png",
-        model3d: "assets/models/spirit.glb",
+        model3d: "assets/models/Mars/spirit-and-opportunity/spirit-and-opportunity.glb",
         coordinates: {
             lat: -14.5684,
             lng: 175.4726
@@ -434,7 +434,7 @@ const spaceArtifacts = [
         id: "opportunity",
         location: "Mars",
         image: "assets/images/opportunity.png",
-        model3d: "assets/models/opportunity.glb",
+        model3d: "assets/models/Mars/spirit-and-opportunity/spirit-and-opportunity.glb",
         coordinates: {
             lat: -1.9462,
             lng: 354.4734
@@ -540,7 +540,7 @@ const spaceArtifacts = [
         id: "ingenuity",
         location: "Mars",
         image: "assets/images/ingenuity.png",
-        model3d: "assets/models/ingenuity.glb",
+        model3d: "assets/models/Mars/ingenuity-helicopter/ingenuity-helicopter.glb",
         coordinates: {
             lat: 18.4447,
             lng: 77.4508
