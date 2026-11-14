@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<!-- The dirction of the text in English -->
+<html lang="en" dir="ltr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Abandoned but not Forgotten</title>
+    <!-- Link CSS stylesheet -->
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <!-- Switch language button -->
+    <nav class="top-nav">
+        <button id="lang-toggle" class="lang-btn">عربي</button>
+    </nav>
+
+    <!-- Main app container -->
+    <main id="app-container">
+        <header>
+            <!-- Added an id for itle and description -->
+            <h1 id="main-title">Left in Silence, Remembered in Science</h1>
+            <p id="main-desc">Discover the untold stories of NASA's discarded heroes on the Moon and Mars.</p>
+        </header>
+
+        <!-- Planet selection section -->
+        <section id="destination-selector">
+            <button id="btn-moon" class="planet-btn">Explore The Moon</button>
+            <button id="btn-mars" class="planet-btn">Explore Mars</button>
+        </section>
+
+        <!-- Story and map display area (controlled via JavaScript) -->
+        <section id="story-display" class="hidden">
+            <!-- Story and images will be injected here -->
+        </section>
+    </main>
+
+    <!-- Link JavaScript files (Data first, then main script) -->
+    <script src="data.js"></script>
+    <script src="script.js"></script>
+</body>
+
+</html>
