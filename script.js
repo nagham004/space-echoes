@@ -55,15 +55,7 @@ const MODEL_CONFIGS = {
         initRotX: 0.25,
         initRotY: -0.60
     },
-    spirit: {
-        rotX: 0,
-        rotY: 0,
-        rotZ: 0,
-        scaleFactor: 1.0,
-        initRotX: 0.22,
-        initRotY: -0.45
-    },
-    opportunity: {
+    spirit_opportunity: {
         rotX: 0,
         rotY: 0,
         rotZ: 0,
@@ -79,11 +71,6 @@ const MODEL_CONFIGS = {
         initRotX: 0.20,
         initRotY: -0.35
     }
-};
-
-const SCALE_NOTE_TEXT = {
-    ar: 'الحجم مكبّر للتوضيح',
-    en: 'Scale exaggerated for clarity'
 };
 
 (function () {
@@ -160,6 +147,7 @@ const SCALE_NOTE_TEXT = {
     // Scrollytelling Entrance State
     let scrollProgress = 0.0;
     let planetEntrance = 0.0;
+    let footerOverlap = 0.0;
 
     const raycaster = new THREE.Raycaster();
     const mouseVector = new THREE.Vector2();
@@ -173,6 +161,7 @@ const SCALE_NOTE_TEXT = {
     const elements = {
         html: document.documentElement,
         langToggle: document.getElementById('lang-toggle'),
+        langToggleLabel: document.getElementById('lang-toggle-label'),
         heroTitleSection: document.getElementById('hero-title-section'),
         heroTitleContent: document.getElementById('hero-title-content'),
         mainTitle: document.getElementById('main-title'),
@@ -196,12 +185,109 @@ const SCALE_NOTE_TEXT = {
         storyTitle: document.getElementById('story-title'),
         storyScrim: document.getElementById('story-scrim'),
         btnStoryNext: document.getElementById('btn-story-next'),
+        quizContainer: document.getElementById('quiz-container'),
+        quizBadge: document.getElementById('quiz-badge'),
+        quizProgress: document.getElementById('quiz-progress'),
+        quizQuestion: document.getElementById('quiz-question'),
+        quizOptions: document.getElementById('quiz-options'),
+        quizResult: document.getElementById('quiz-result'),
+        quizScoreText: document.getElementById('quiz-score-text'),
+        btnQuizRetry: document.getElementById('btn-quiz-retry'),
+        btnQuizClose: document.getElementById('btn-quiz-close'),
+        certificateContainer: document.getElementById('certificate-container'),
+        certBadge: document.getElementById('cert-badge'),
+        certTitle: document.getElementById('cert-title'),
+        certSubtitle: document.getElementById('cert-subtitle'),
+        certNameInput: document.getElementById('cert-name-input'),
+        certError: document.getElementById('cert-error'),
+        btnGenerateCert: document.getElementById('btn-generate-cert'),
+        btnCertClose: document.getElementById('btn-cert-close'),
+        certCanvas: document.getElementById('cert-canvas'),
+        siteCredits: document.getElementById('site-credits'),
+        skipLink: document.getElementById('skip-link'),
+        langLive: document.getElementById('lang-live'),
+        heroChallengeBadge: document.getElementById('hero-challenge-badge'),
+        heroChallengeTitle: document.getElementById('hero-challenge-title'),
+        heroTeamLogo: document.getElementById('hero-team-logo'),
+        stageAttribution: document.getElementById('stage-attribution'),
+        btnMobileSources: document.getElementById('btn-mobile-sources'),
+        mobileSourcesPopover: document.getElementById('mobile-sources-popover'),
+        mobileSourcesDisclaimer: document.getElementById('mobile-sources-disclaimer'),
         astronautCaption: document.getElementById('astronaut-caption'),
         astronautCaptionText: document.getElementById('astronaut-caption-text'),
         markerTooltip: document.getElementById('marker-tooltip'),
-        a11yArtifactsNav: document.getElementById('a11y-artifacts-nav'),
-        artifactScaleNote: document.getElementById('artifact-scale-note')
+        a11yArtifactsNav: document.getElementById('a11y-artifacts-nav')
     };
+
+    let creditsExpanded = false;
+
+    /**
+     * Translation lookup with automatic fallback to the alternate language and console.warn on missing keys.
+     */
+    function t(key, lang = currentLang) {
+        const primary = uiText[lang];
+        if (primary && Object.prototype.hasOwnProperty.call(primary, key) && primary[key] !== undefined && primary[key] !== null) {
+            return primary[key];
+        }
+        const altLang = lang === 'ar' ? 'en' : 'ar';
+        console.warn(`Missing uiText key "${key}" for language "${lang}"`);
+        const fallback = uiText[altLang];
+        if (fallback && Object.prototype.hasOwnProperty.call(fallback, key) && fallback[key] !== undefined && fallback[key] !== null) {
+            return fallback[key];
+        }
+        return key;
+    }
+
+    function updateStageAttributionVisibility() {
+        const atFooter = viewMode === 'overview' && showStage === 'off' && footerOverlap > 0.1;
+        const showOnStage = !atFooter && (viewMode === 'explore' || showStage !== 'off' || scrollProgress > 0.45);
+        if (elements.stageAttribution) {
+            elements.stageAttribution.classList.toggle('hidden', !showOnStage);
+        }
+        if (elements.btnMobileSources) {
+            elements.btnMobileSources.classList.toggle('hidden', !showOnStage);
+        }
+        if (!showOnStage && elements.mobileSourcesPopover) {
+            elements.mobileSourcesPopover.classList.add('hidden');
+            if (elements.btnMobileSources) elements.btnMobileSources.setAttribute('aria-expanded', 'false');
+        }
+        updateTeamLogoTransform();
+    }
+
+    function updateTeamLogoTransform() {
+        const logo = elements.heroTeamLogo;
+        if (!logo) return;
+        if (showStage !== 'off') {
+            logo.style.opacity = '0';
+            return;
+        }
+        logo.style.opacity = '1';
+
+        const w = logo.offsetWidth || 320;
+        const h = logo.offsetHeight || 180;
+        const vw = window.innerWidth || 1280;
+        const vh = window.innerHeight || 800;
+
+        const tRaw = viewMode === 'explore' ? 1 : Math.min(1, Math.max(0, scrollProgress / 0.52));
+        const ease = 1 - Math.pow(1 - tRaw, 3);
+
+        const startX = vw / 2;
+        const startY = Math.max(28, vh * 0.09) + h / 2;
+        const startScale = 1;
+
+        const isMobile = vw <= 768;
+        const endScale = isMobile ? 0.38 : 0.30;
+        const pad = isMobile ? 14 : 24;
+        const isRtl = currentLang === 'ar';
+        const endX = isRtl ? (pad + (w * endScale) / 2) : (vw - pad - (w * endScale) / 2);
+        const endY = (isMobile ? 12 : 16) + (h * endScale) / 2;
+
+        const curX = startX + (endX - startX) * ease;
+        const curY = startY + (endY - startY) * ease;
+        const curScale = startScale + (endScale - startScale) * ease;
+
+        logo.style.transform = `translate(${(curX - w / 2).toFixed(1)}px, ${(curY - h / 2).toFixed(1)}px) scale(${curScale.toFixed(4)})`;
+    }
 
     /**
      * Texture Loader with Color Space configuration and onError error logging
@@ -777,6 +863,7 @@ const SCALE_NOTE_TEXT = {
 
         updateAstronautTarget(newForeground);
         updateAstronautCaption();
+        updateStageAttributionVisibility();
     }
 
     /**
@@ -839,6 +926,9 @@ const SCALE_NOTE_TEXT = {
         if (elements.heroTitleSection) {
             elements.heroTitleSection.style.display = 'none';
         }
+        if (elements.siteCredits) {
+            elements.siteCredits.style.display = 'none';
+        }
         if (elements.btnBackToOverview) {
             elements.btnBackToOverview.classList.remove('hidden');
         }
@@ -848,6 +938,7 @@ const SCALE_NOTE_TEXT = {
         elements.spaceCanvas.setAttribute('aria-label', body === 'Moon' ? strings.moonSphereAria : strings.marsSphereAria);
 
         updateAstronautCaption();
+        updateStageAttributionVisibility();
         elements.spaceCanvas.focus();
     }
 
@@ -871,6 +962,9 @@ const SCALE_NOTE_TEXT = {
         if (elements.heroTitleSection) {
             elements.heroTitleSection.style.display = '';
         }
+        if (elements.siteCredits) {
+            elements.siteCredits.style.display = '';
+        }
         if (elements.btnBackToOverview) {
             elements.btnBackToOverview.classList.add('hidden');
         }
@@ -879,6 +973,7 @@ const SCALE_NOTE_TEXT = {
 
         onWindowScroll();
         updateAstronautCaption();
+        updateStageAttributionVisibility();
         elements.spaceCanvas.focus();
     }
 
@@ -1200,7 +1295,17 @@ const SCALE_NOTE_TEXT = {
         const entranceRaw = Math.min(1, Math.max(0, (scrollProgress - 0.15) / 0.75));
         planetEntrance = 1 - Math.pow(1 - entranceRaw, 3);
 
+        // Phase 3: Shrink & lift planets + astronaut when footer enters viewport
+        if (elements.siteCredits) {
+            const rect = elements.siteCredits.getBoundingClientRect();
+            const visibleH = Math.max(0, vh - rect.top);
+            footerOverlap = Math.min(1, visibleH / Math.max(180, rect.height));
+        } else {
+            footerOverlap = 0;
+        }
+
         updateAstronautCaption();
+        updateStageAttributionVisibility();
     }
 
     /**
@@ -1223,20 +1328,22 @@ const SCALE_NOTE_TEXT = {
                 if (marsGroup) marsGroup.visible = true;
             }
 
-            // Smooth entrance from below
+            // Smooth entrance from below + lift & shrink above footer
             const yOffset = (1 - planetEntrance) * -4.2;
             const zOffset = (1 - planetEntrance) * -2.0;
+            const footerScale = 1 - footerOverlap * 0.42;
+            const footerLiftY = footerOverlap * 1.15;
 
             const targetMoonPos = targets.moonPos.clone();
-            targetMoonPos.y += yOffset;
+            targetMoonPos.y += yOffset + footerLiftY;
             targetMoonPos.z += zOffset;
 
             const targetMarsPos = targets.marsPos.clone();
-            targetMarsPos.y += yOffset;
+            targetMarsPos.y += yOffset + footerLiftY;
             targetMarsPos.z += zOffset;
 
-            const targetMoonScale = Math.max(0.001, targets.moonScale * planetEntrance);
-            const targetMarsScale = Math.max(0.001, targets.marsScale * planetEntrance);
+            const targetMoonScale = Math.max(0.001, targets.moonScale * planetEntrance * footerScale);
+            const targetMarsScale = Math.max(0.001, targets.marsScale * planetEntrance * footerScale);
 
             moonGroup.position.lerp(targetMoonPos, 0.1);
             marsGroup.position.lerp(targetMarsPos, 0.1);
@@ -1286,6 +1393,7 @@ const SCALE_NOTE_TEXT = {
 
         // 4. Artifact showcase: camera flight, floating model, narrator astronaut
         if (showStage !== 'off') updateShowcase(dt, now);
+        updateTeamLogoTransform();
 
         // Planet material remains pure white (1.0) so natural texture colors are preserved
         if (moonMesh && moonMesh.material.color.r !== 1.0) moonMesh.material.color.setRGB(1, 1, 1);
@@ -1303,7 +1411,7 @@ const SCALE_NOTE_TEXT = {
             const tiltZ  = isReducedMotion ? 0 : Math.cos(time * 0.7) * 0.03;
             const rotYOffset = isReducedMotion ? 0 : Math.sin(time * 0.5) * 0.04;
 
-            const yScrollOffset = (viewMode === 'overview') ? (1 - planetEntrance) * -2.2 : 0;
+            const yScrollOffset = (viewMode === 'overview') ? ((1 - planetEntrance) * -2.2 + footerOverlap * 1.15) : 0;
             const targetX = targets.astronautPos.x;
             const targetY = targets.astronautPos.y + floatY + yScrollOffset;
             const targetZ = targets.astronautPos.z + floatZ;
@@ -1317,7 +1425,8 @@ const SCALE_NOTE_TEXT = {
             astronautGroup.rotation.x = tiltX;
             astronautGroup.rotation.z = tiltZ;
 
-            const targetScale = (viewMode === 'overview' ? planetEntrance : 0.0) * targets.astronautScale;
+            const footerAstroScale = (viewMode === 'overview') ? (1 - footerOverlap * 0.42) : 1;
+            const targetScale = (viewMode === 'overview' ? planetEntrance : 0.0) * targets.astronautScale * footerAstroScale;
             const curScale = astronautGroup.scale.x + (targetScale - astronautGroup.scale.x) * 0.08;
             astronautGroup.scale.set(curScale, curScale, curScale);
             astronautGroup.visible = curScale > 0.01;
@@ -1345,6 +1454,7 @@ const SCALE_NOTE_TEXT = {
         camera.updateProjectionMatrix();
 
         updateAstronautTarget(activeForeground);
+        updateTeamLogoTransform();
 
         if (showStage === 'story') {
             clearTimeout(resizeTimer);
@@ -1374,11 +1484,22 @@ const SCALE_NOTE_TEXT = {
     const focusGoal = { pos: new THREE.Vector3(), quat: new THREE.Quaternion(), ox: 0, oy: 0 };
 
     const STORY_UI_TEXT = {
-        ar: { next: 'التالي', done: 'إنهاء' },
-        en: { next: 'Next', done: 'Done' }
+        ar: { next: 'التالي', done: 'اختبر معلوماتك' },
+        en: { next: 'Next', done: 'Test your knowledge' }
     };
     const STORY_FADE_MS = 125; // out + in = 250ms
     const MOBILE_MAX_WIDTH = 768;
+
+    let quizActive = false;
+    let quizQuestions = [];
+    let quizIndex = 0;
+    let quizScore = 0;
+    let quizLocked = false;
+    let quizAdvanceTimer = null;
+
+    let typeWriterTimer = null;
+    let typeWriterSkipFn = null;
+    const TYPEWRITER_SPEED_MS = 20;
 
     function prefersReducedMotion() {
         return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -1391,7 +1512,7 @@ const SCALE_NOTE_TEXT = {
     function storyLabels() {
         const strings = uiText[currentLang];
         const fallback = STORY_UI_TEXT[currentLang];
-        return { next: strings.next || fallback.next, done: strings.done || fallback.done };
+        return { next: strings.next || fallback.next, done: strings.finishStory || fallback.done };
     }
 
     function initShowScene() {
@@ -1434,17 +1555,30 @@ const SCALE_NOTE_TEXT = {
         const H = window.innerHeight;
         if (W <= MOBILE_MAX_WIDTH) {
             const top = 72;
-            const bottom = Math.max(top + 80, elements.storyPanel.getBoundingClientRect().top - 8);
+            const refEl = quizActive && !elements.quizContainer.classList.contains('hidden')
+                ? elements.quizContainer
+                : quizActive && !elements.certificateContainer.classList.contains('hidden')
+                    ? elements.certificateContainer
+                    : elements.storyPanel;
+            const bottom = Math.max(top + 80, refEl.getBoundingClientRect().top - 8);
             const h = bottom - top;
             return {
-                astro: { x: 0.30 * W, y: (top + bottom) / 2, h: 0.95 * h },
+                astro: {
+                    x: quizActive ? 0.34 * W : 0.30 * W,
+                    y: quizActive ? (top + bottom) / 2 + 0.08 * h : (top + bottom) / 2,
+                    h: quizActive ? 1.25 * h : 0.95 * h
+                },
                 model: { x: 0.72 * W, y: (top + bottom) / 2, h: 0.8 * h, w: 0.4 * W }
             };
         }
         const modelX = STORY_MODEL_X * W;
         return {
-            astro: { x: STORY_ASTRONAUT_X * W, y: 0.5 * H, h: STORY_ASTRONAUT_HEIGHT * H },
-            model: { x: modelX, y: 0.5 * H, h: STORY_MODEL_FILL * H, w: 1.6 * (W - modelX) }
+            astro: quizActive
+                ? { x: 0.16 * W, y: 0.58 * H, h: 0.80 * H }
+                : { x: STORY_ASTRONAUT_X * W, y: 0.5 * H, h: STORY_ASTRONAUT_HEIGHT * H },
+            model: quizActive
+                ? { x: 0.84 * W, y: 0.50 * H, h: 0.44 * H, w: 0.28 * W }
+                : { x: modelX, y: 0.5 * H, h: STORY_MODEL_FILL * H, w: 1.6 * (W - modelX) }
         };
     }
 
@@ -1731,27 +1865,27 @@ const SCALE_NOTE_TEXT = {
 
         elements.artifactTag.textContent = langData.location || (currentBody === 'Moon' ? strings.planetMoon : strings.planetMars);
         elements.artifactTitle.textContent = langData.name || artifact.id;
-        elements.artifactYear.textContent = `${strings.year}: ${langData.year || ''}`;
-        if (elements.artifactScaleNote) {
-            elements.artifactScaleNote.textContent = SCALE_NOTE_TEXT[currentLang];
-        }
+        elements.artifactYear.replaceChildren();
+        elements.artifactYear.append(document.createTextNode(`${strings.year}: `));
+        appendBdiText(elements.artifactYear, langData.year || '');
 
         if (artifact.coordinates) {
             const latStr = `${Math.abs(artifact.coordinates.lat).toFixed(2)}° ${artifact.coordinates.lat >= 0 ? 'N' : 'S'}`;
             const lngStr = `${Math.abs(artifact.coordinates.lng).toFixed(2)}° ${artifact.coordinates.lng >= 0 ? 'E' : 'W'}`;
-            elements.artifactCoords.textContent = `${strings.coordinates}: ${latStr}, ${lngStr}`;
+            const coordLabel = (artifact.coordinatesLabel && artifact.coordinatesLabel[currentLang]) || strings.coordinates;
+            elements.artifactCoords.replaceChildren();
+            elements.artifactCoords.append(document.createTextNode(`${coordLabel}: `));
+            const bdi = document.createElement('bdi');
+            bdi.dir = 'ltr';
+            bdi.textContent = `${latStr}, ${lngStr}`;
+            elements.artifactCoords.append(bdi);
             elements.artifactCoords.classList.remove('hidden');
         } else {
             elements.artifactCoords.classList.add('hidden');
         }
 
-        let summaryText = '';
-        if (langData.chapters && langData.chapters.length > 0) {
-            summaryText = langData.chapters[0].content || langData.chapters[0].title;
-        } else if (langData.story_parts) {
-            summaryText = langData.story_parts.intro || '';
-        }
-        elements.artifactSummary.textContent = summaryText;
+        elements.artifactSummary.replaceChildren();
+        appendBdiText(elements.artifactSummary, langData.brief_story || '');
     }
 
     /** "Discover the story": the card fades, the model floats right, the astronaut enters, the text appears. */
@@ -1781,11 +1915,31 @@ const SCALE_NOTE_TEXT = {
     }
 
     /** Close button / Esc / last page: everything returns to how it was. */
+    function resetQuizAndCertificate() {
+        clearTimeout(quizAdvanceTimer);
+        quizActive = false;
+        quizQuestions = [];
+        quizIndex = 0;
+        quizScore = 0;
+        quizLocked = false;
+        if (elements.artifactDrawer) elements.artifactDrawer.classList.remove('quiz-mode-astronaut');
+        if (elements.quizContainer) elements.quizContainer.classList.add('hidden');
+        if (elements.quizResult) elements.quizResult.classList.add('hidden');
+        if (elements.certificateContainer) elements.certificateContainer.classList.add('hidden');
+        if (elements.certError) {
+            elements.certError.textContent = '';
+            elements.certError.classList.add('hidden');
+        }
+        if (elements.certNameInput) elements.certNameInput.value = '';
+    }
+
     function closeShowcase(immediate) {
         if (showStage === 'off') return;
         if (showStage !== 'closing') {
             clearTimeout(storyTimer);
+            stopTypeWriter();
             storyBusy = false;
+            resetQuizAndCertificate();
             showStage = 'closing';
             if (astronautGroup && typeof astronautGroup.setSpeaking === 'function') {
                 astronautGroup.setSpeaking(false);
@@ -1835,29 +1989,41 @@ const SCALE_NOTE_TEXT = {
     // ------------------------------------------------------------------------
     // Story text: split into small pages that always fit the screen
     // ------------------------------------------------------------------------
-    function getArtifactChapters() {
-        if (!currentArtifact) return [];
-        const langData = currentArtifact[currentLang] || currentArtifact.en;
+    const SLIDE_ORDER = [
+        'astronaut_intro',
+        'motivations',
+        'impossible_challenge',
+        'engineering_solution',
+        'journey',
+        'memories',
+        'timeline',
+        'ending',
+        'astronaut_conclusion'
+    ];
 
-        if (langData.chapters && Array.isArray(langData.chapters) && langData.chapters.length > 0) {
-            return langData.chapters;
+    /** Wrap numbers/times/dates in <bdi dir="ltr"> in Arabic so BiDi order stays natural. */
+    function appendBdiText(parent, text) {
+        const str = String(text || '');
+        if (currentLang !== 'ar') {
+            parent.append(document.createTextNode(str));
+            return;
         }
-
-        if (langData.story_parts) {
-            const parts = langData.story_parts;
-            return [
-                { type: 'text', title: currentLang === 'ar' ? 'المقدمة' : 'Introduction', content: parts.intro },
-                { type: 'facts', title: currentLang === 'ar' ? 'سبب الإرسال' : 'Mission Purpose', items: [parts.mission] },
-                { type: 'numbers', title: currentLang === 'ar' ? 'الإنجازات' : 'Achievements', stats: [{ value: langData.year || '—', label: parts.achievement }] },
-                { type: 'text', title: currentLang === 'ar' ? 'كيف انتهت' : 'How it Ended', content: parts.ending }
-            ];
+        const re = /(\d[\d.:/-]*(?:\s*(?:UT|km|m|kg))?)/g;
+        let last = 0;
+        let m;
+        while ((m = re.exec(str)) !== null) {
+            if (m.index > last) parent.append(document.createTextNode(str.slice(last, m.index)));
+            const bdi = document.createElement('bdi');
+            bdi.dir = 'ltr';
+            bdi.textContent = m[0];
+            parent.append(bdi);
+            last = m.index + m[0].length;
         }
-
-        return [];
+        if (last < str.length) parent.append(document.createTextNode(str.slice(last)));
     }
 
     function splitSentences(text) {
-        return text.split(/(?<=[.!?؟…])\s+/).map(s => s.trim()).filter(Boolean);
+        return text.split(/(?<=[.!?؟…»”])\s+/).map(s => s.trim()).filter(Boolean);
     }
 
     /** Group sentences into chunks of at most `maxChars`, as evenly as possible. */
@@ -1884,61 +2050,72 @@ const SCALE_NOTE_TEXT = {
     function makeNode(tag, className, text) {
         const node = document.createElement(tag);
         if (className) node.className = className;
-        if (text !== undefined) node.textContent = text;
+        if (text !== undefined) appendBdiText(node, text);
         return node;
     }
 
     function buildPageBody(page) {
         const frag = document.createDocumentFragment();
-        switch (page.kind) {
-            case 'facts': {
-                const list = makeNode('ul', 'story-facts');
-                page.atoms.forEach(item => {
-                    const li = makeNode('li', 'story-fact');
-                    if (item && typeof item === 'object' && item.label && item.value) {
-                        li.append(makeNode('span', 'story-fact-label', item.label), makeNode('span', 'story-fact-value', item.value));
-                    } else {
-                        const text = typeof item === 'string' ? item : (item.text || item.label || item.value || '');
-                        li.append(makeNode('span', 'story-fact-value', text));
-                    }
-                    list.appendChild(li);
-                });
-                frag.appendChild(list);
-                break;
-            }
-            case 'timeline': {
-                const list = makeNode('div', 'story-events');
-                page.atoms.forEach(ev => {
-                    const row = makeNode('div', 'story-event');
-                    const text = makeNode('span', 'story-event-text');
-                    text.append(makeNode('strong', '', ev.title || ''), document.createTextNode(ev.description ? ` ${ev.description}` : ''));
-                    row.append(makeNode('span', 'story-event-date', ev.year || ''), text);
-                    list.appendChild(row);
-                });
-                frag.appendChild(list);
-                break;
-            }
-            case 'numbers': {
-                const grid = makeNode('div', 'story-stats');
-                page.atoms.forEach(st => {
-                    const cell = makeNode('div', 'story-stat');
-                    cell.append(makeNode('span', 'story-stat-value', st.value || ''), makeNode('span', 'story-stat-label', st.label || ''));
-                    grid.appendChild(cell);
-                });
-                frag.appendChild(grid);
-                break;
-            }
-            default:
-                frag.appendChild(makeNode('p', 'story-text', page.atoms.join(' ')));
+        if (page.kind === 'timeline') {
+            const list = makeNode('div', 'story-events');
+            page.atoms.forEach(ev => {
+                const row = makeNode('div', 'story-event');
+                row.append(
+                    makeNode('span', 'story-event-date', ev.when || ''),
+                    makeNode('span', 'story-event-text', ev.event || '')
+                );
+                list.appendChild(row);
+            });
+            frag.appendChild(list);
+        } else if (page.kind === 'sources') {
+            const intro = makeNode(
+                'p',
+                'story-sources-intro',
+                currentLang === 'ar'
+                    ? 'معلومات هذه القصة مأخوذة من:'
+                    : 'The information in this story comes from:'
+            );
+            frag.appendChild(intro);
+
+            const list = makeNode('ul', 'story-sources-list');
+            (page.atoms || []).forEach(src => {
+                const li = document.createElement('li');
+                const a = document.createElement('a');
+                const label = currentLang === 'ar' ? src.title_ar : src.title_en;
+                a.href = src.url;
+                a.target = '_blank';
+                a.rel = 'noopener noreferrer';
+                a.className = 'story-source-link';
+                a.textContent = label;
+                a.setAttribute(
+                    'aria-label',
+                    currentLang === 'ar'
+                        ? `${label} (يفتح في نافذة جديدة)`
+                        : `${label} (opens in a new tab)`
+                );
+                li.appendChild(a);
+                list.appendChild(li);
+            });
+            frag.appendChild(list);
+        } else {
+            page.atoms.forEach(para => {
+                frag.appendChild(makeNode('p', 'story-text', para));
+            });
         }
         return frag;
     }
 
     function renderPageInto(root, page, index, total) {
         const labels = storyLabels();
-        const strings = uiText[currentLang];
-        root.querySelector('.story-kicker').textContent = `${strings.chapter} ${page.chapter + 1} / ${page.total}`;
-        root.querySelector('.story-title').textContent = page.title;
+        const kickerEl = root.querySelector('.story-kicker');
+        if (kickerEl) {
+            kickerEl.textContent = '';
+            kickerEl.hidden = true;
+        }
+
+        const titleEl = root.querySelector('.story-title');
+        titleEl.textContent = page.title;
+
         const body = root.querySelector('.story-body');
         body.replaceChildren(buildPageBody(page));
         body.style.fontSize = page.scale < 1 ? `${page.scale}em` : '';
@@ -1947,15 +2124,120 @@ const SCALE_NOTE_TEXT = {
         root.querySelector('.story-next-btn').textContent = index === total - 1 ? labels.done : labels.next;
     }
 
+    function stopTypeWriter() {
+        clearTimeout(typeWriterTimer);
+        typeWriterTimer = null;
+        typeWriterSkipFn = null;
+        if (elements.btnStoryNext) {
+            elements.btnStoryNext.disabled = false;
+            elements.btnStoryNext.style.opacity = '';
+            elements.btnStoryNext.style.pointerEvents = '';
+            elements.btnStoryNext.removeAttribute('aria-hidden');
+        }
+    }
+
+    function typeWriter(text, element, speed, callback) {
+        clearTimeout(typeWriterTimer);
+        typeWriterTimer = null;
+        const fullText = String(text || '');
+        element.replaceChildren();
+
+        if (!fullText || prefersReducedMotion()) {
+            appendBdiText(element, fullText);
+            typeWriterSkipFn = null;
+            if (typeof callback === 'function') callback();
+            return;
+        }
+
+        let i = 0;
+        const finishNow = () => {
+            clearTimeout(typeWriterTimer);
+            typeWriterTimer = null;
+            typeWriterSkipFn = null;
+            element.replaceChildren();
+            appendBdiText(element, fullText);
+            if (typeof callback === 'function') callback();
+        };
+        typeWriterSkipFn = finishNow;
+
+        const step = () => {
+            if (i < fullText.length) {
+                i += 1;
+                element.textContent = fullText.slice(0, i);
+                typeWriterTimer = setTimeout(step, speed);
+            } else {
+                finishNow();
+            }
+        };
+        step();
+    }
+
     function renderStoryPage() {
         const page = storyPages[storyPageIndex];
         if (!page) return;
+        stopTypeWriter();
         renderPageInto(elements.storyPanel, page, storyPageIndex, storyPages.length);
+
+        if (page.kind === 'text' && Array.isArray(page.atoms) && page.atoms.length > 0) {
+            const body = elements.storyPanel.querySelector('.story-body');
+            if (!body) return;
+
+            // Hide/disable Next button while astronaut is typing
+            if (elements.btnStoryNext) {
+                elements.btnStoryNext.disabled = true;
+                elements.btnStoryNext.style.opacity = '0';
+                elements.btnStoryNext.style.pointerEvents = 'none';
+                elements.btnStoryNext.setAttribute('aria-hidden', 'true');
+            }
+
+            const paragraphs = page.atoms.map(() => {
+                const p = makeNode('p', 'story-text');
+                return p;
+            });
+            body.replaceChildren(...paragraphs);
+
+            const showNextBtn = () => {
+                typeWriterSkipFn = null;
+                if (elements.btnStoryNext) {
+                    elements.btnStoryNext.disabled = false;
+                    elements.btnStoryNext.style.opacity = '';
+                    elements.btnStoryNext.style.pointerEvents = '';
+                    elements.btnStoryNext.removeAttribute('aria-hidden');
+                }
+            };
+
+            const typeNextParagraph = idx => {
+                if (idx >= page.atoms.length) {
+                    showNextBtn();
+                    return;
+                }
+                const finishAll = () => {
+                    clearTimeout(typeWriterTimer);
+                    typeWriterTimer = null;
+                    for (let j = idx; j < page.atoms.length; j++) {
+                        paragraphs[j].replaceChildren();
+                        appendBdiText(paragraphs[j], page.atoms[j]);
+                    }
+                    showNextBtn();
+                };
+                typeWriter(page.atoms[idx], paragraphs[idx], TYPEWRITER_SPEED_MS, () => {
+                    typeNextParagraph(idx + 1);
+                });
+                if (typeWriterSkipFn) {
+                    typeWriterSkipFn = finishAll;
+                }
+            };
+
+            typeNextParagraph(0);
+        }
     }
 
     /** Pagination is measured on an invisible copy of the panel (same CSS, same size). */
     function buildStoryPages() {
-        const chapters = getArtifactChapters();
+        if (!currentArtifact) return;
+        const langData = currentArtifact[currentLang] || currentArtifact.en;
+        const titles = (typeof slideTitles !== 'undefined' && slideTitles[currentLang]) || {};
+
         const probe = elements.storyPanel.cloneNode(true);
         probe.querySelectorAll('[id]').forEach(n => n.removeAttribute('id'));
         probe.removeAttribute('id');
@@ -1974,59 +2256,105 @@ const SCALE_NOTE_TEXT = {
                 if (fits(page)) return;
             }
         };
-        // Lists: at most `maxPer` items per page, fewer when they do not fit
-        const addItems = (pages, base, kind, atoms) => {
-            if (atoms.length === 0) return;
-            const per = Math.ceil(atoms.length / Math.ceil(atoms.length / STORY_MAX_ITEMS));
-            let i = 0;
-            while (i < atoms.length) {
-                let take = Math.min(per, atoms.length - i);
-                let page = { ...base, kind, atoms: atoms.slice(i, i + take), scale: 1 };
-                while (take > 1 && !fits(page)) {
-                    take--;
-                    page = { ...base, kind, atoms: atoms.slice(i, i + take), scale: 1 };
-                }
-                shrinkToFit(page);
-                pages.push(page);
-                i += take;
-            }
-        };
-        // Text: one page per paragraph; long paragraphs are split at sentence boundaries
-        const addText = (pages, base, paragraph) => {
-            const place = chunk => {
-                const page = { ...base, kind: 'text', atoms: chunk, scale: 1 };
-                if (chunk.length > 1 && !fits(page)) {
-                    const mid = Math.ceil(chunk.length / 2);
-                    place(chunk.slice(0, mid));
-                    place(chunk.slice(mid));
-                    return;
-                }
-                shrinkToFit(page);
-                pages.push(page);
-            };
-            chunkSentences(splitSentences(paragraph), STORY_MAX_CHARS).forEach(place);
-        };
-        const paragraphsOf = value => (Array.isArray(value) ? value : String(value || '').split(/\n+/))
-            .map(p => String(p).trim()).filter(Boolean);
 
-        const pages = [];
-        chapters.forEach((chapter, ci) => {
-            const base = { chapter: ci, total: chapters.length, title: chapter.title || '' };
-            switch (chapter.type) {
-                case 'facts':
-                    addItems(pages, base, 'facts', chapter.items || []);
-                    break;
-                case 'timeline':
-                    addItems(pages, base, 'timeline', chapter.events || []);
-                    break;
-                case 'numbers':
-                    addItems(pages, base, 'numbers', chapter.stats || []);
-                    paragraphsOf(chapter.paragraphs).forEach(p => addText(pages, base, p));
-                    break;
-                default:
-                    paragraphsOf(chapter.content).forEach(p => addText(pages, base, p));
-            }
+        const activeSections = SLIDE_ORDER.filter(key => {
+            const val = langData[key];
+            return (Array.isArray(val) && val.length > 0) || (typeof val === 'string' && val.trim().length > 0);
         });
+        const totalSections = activeSections.length + 1; // +1 for Sources slide
+        const pages = [];
+
+        const pushSectionPages = (sectionPages, sectionIndex, title) => {
+            const subTotal = sectionPages.length;
+            sectionPages.forEach((p, idx) => {
+                p.sectionIndex = sectionIndex;
+                p.sectionTotal = totalSections;
+                p.title = title;
+                p.subIndex = idx + 1;
+                p.subTotal = subTotal;
+                pages.push(p);
+            });
+        };
+
+        activeSections.forEach((key, si) => {
+            const title = titles[key] || key;
+            const sectionPages = [];
+
+            if (key === 'timeline') {
+                const events = langData.timeline;
+                const per = Math.ceil(events.length / Math.ceil(events.length / STORY_MAX_ITEMS));
+                let i = 0;
+                while (i < events.length) {
+                    let take = Math.min(per, events.length - i);
+                    let page = { kind: 'timeline', atoms: events.slice(i, i + take), scale: 1, title, sectionIndex: si, sectionTotal: totalSections, subIndex: 1, subTotal: 1 };
+                    while (take > 1 && !fits(page)) {
+                        take--;
+                        page = { kind: 'timeline', atoms: events.slice(i, i + take), scale: 1, title, sectionIndex: si, sectionTotal: totalSections, subIndex: 1, subTotal: 1 };
+                    }
+                    shrinkToFit(page);
+                    sectionPages.push(page);
+                    i += take;
+                }
+            } else {
+                // Expand any paragraph > STORY_MAX_CHARS into sentence chunks, then pack short paragraphs up to STORY_MAX_CHARS
+                const units = [];
+                const sectionItems = Array.isArray(langData[key]) ? langData[key] : [langData[key]];
+                sectionItems.forEach(p => {
+                    const text = String(p || '').trim();
+                    if (!text) return;
+                    if (text.length <= STORY_MAX_CHARS) {
+                        units.push(text);
+                    } else {
+                        chunkSentences(splitSentences(text), STORY_MAX_CHARS).forEach(ch => {
+                            units.push(ch.join(' '));
+                        });
+                    }
+                });
+
+                let current = [];
+                let len = 0;
+                const flush = () => {
+                    if (current.length === 0) return;
+                    const page = { kind: 'text', atoms: current.slice(), scale: 1, title, sectionIndex: si, sectionTotal: totalSections, subIndex: 1, subTotal: 1 };
+                    shrinkToFit(page);
+                    sectionPages.push(page);
+                    current = [];
+                    len = 0;
+                };
+
+                units.forEach(u => {
+                    if (current.length > 0) {
+                        const candidate = { kind: 'text', atoms: [...current, u], scale: 1, title, sectionIndex: si, sectionTotal: totalSections, subIndex: 1, subTotal: 1 };
+                        if (len + u.length + 1 <= STORY_MAX_CHARS && fits(candidate)) {
+                            current.push(u);
+                            len += u.length + 1;
+                            return;
+                        }
+                        flush();
+                    }
+                    current.push(u);
+                    len = u.length;
+                });
+                flush();
+            }
+
+            pushSectionPages(sectionPages, si, title);
+        });
+
+        // Final slide: Sources
+        const sourcesTitle = titles.sources || (currentLang === 'ar' ? 'المصادر' : 'Sources');
+        const sourcesPage = {
+            kind: 'sources',
+            atoms: currentArtifact.sources || [],
+            scale: 1,
+            title: sourcesTitle,
+            sectionIndex: totalSections - 1,
+            sectionTotal: totalSections,
+            subIndex: 1,
+            subTotal: 1
+        };
+        shrinkToFit(sourcesPage);
+        pages.push(sourcesPage);
 
         probe.remove();
         storyPages = pages;
@@ -2050,75 +2378,494 @@ const SCALE_NOTE_TEXT = {
         if (storyPageIndex < storyPages.length - 1) {
             goToStoryPage(storyPageIndex + 1);
         } else {
-            closeShowcase();
+            startQuiz();
         }
+    }
+
+    /** Start MCQ Quiz after finishing the story slides. */
+    function startQuiz() {
+        if (!currentArtifact) return;
+        const quizData = (currentArtifact[currentLang] && currentArtifact[currentLang].quiz)
+            || (currentArtifact.ar && currentArtifact.ar.quiz);
+        if (!Array.isArray(quizData) || quizData.length === 0) {
+            closeShowcase();
+            return;
+        }
+
+        quizActive = true;
+        quizQuestions = quizData;
+        quizIndex = 0;
+        quizScore = 0;
+        quizLocked = false;
+
+        elements.storyPanel.classList.add('is-off');
+        if (elements.storyScrim) elements.storyScrim.classList.remove('is-on');
+        if (elements.artifactDrawer) elements.artifactDrawer.classList.add('quiz-mode-astronaut');
+        if (elements.certificateContainer) elements.certificateContainer.classList.add('hidden');
+        if (elements.quizResult) elements.quizResult.classList.add('hidden');
+        if (elements.quizOptions) elements.quizOptions.classList.remove('hidden');
+        if (elements.quizContainer) elements.quizContainer.classList.remove('hidden');
+
+        renderQuizQuestion();
+    }
+
+    function renderQuizQuestion() {
+        const q = quizQuestions[quizIndex];
+        if (!q || !elements.quizQuestion || !elements.quizOptions) return;
+
+        quizLocked = false;
+        const isAr = currentLang === 'ar';
+        if (elements.quizBadge) {
+            elements.quizBadge.textContent = isAr ? 'اختبر معلوماتك' : 'Test your knowledge';
+        }
+        if (elements.quizProgress) {
+            elements.quizProgress.textContent = `${quizIndex + 1} / ${quizQuestions.length}`;
+        }
+        if (elements.quizResult) elements.quizResult.classList.add('hidden');
+        elements.quizOptions.classList.remove('hidden');
+        elements.quizQuestion.textContent = q.question;
+        elements.quizOptions.replaceChildren();
+
+        q.options.forEach((optText, idx) => {
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'quiz-option-btn';
+            btn.textContent = optText;
+            btn.addEventListener('click', () => handleQuizAnswer(idx, btn));
+            elements.quizOptions.appendChild(btn);
+        });
+
+        const firstBtn = elements.quizOptions.querySelector('button');
+        if (firstBtn) firstBtn.focus({ preventScroll: true });
+    }
+
+    function handleQuizAnswer(selectedIndex, clickedBtn) {
+        if (quizLocked) return;
+        quizLocked = true;
+
+        const q = quizQuestions[quizIndex];
+        const buttons = Array.from(elements.quizOptions.querySelectorAll('.quiz-option-btn'));
+        buttons.forEach(b => { b.disabled = true; });
+
+        const isCorrect = selectedIndex === q.correct_index;
+        if (isCorrect) {
+            quizScore += 1;
+            clickedBtn.classList.add('is-correct');
+        } else {
+            clickedBtn.classList.add('is-wrong');
+            if (buttons[q.correct_index]) {
+                buttons[q.correct_index].classList.add('is-correct');
+            }
+        }
+
+        clearTimeout(quizAdvanceTimer);
+        quizAdvanceTimer = setTimeout(() => {
+            if (!quizActive) return;
+            if (quizIndex < quizQuestions.length - 1) {
+                quizIndex += 1;
+                renderQuizQuestion();
+            } else if (quizScore === quizQuestions.length) {
+                showCertificateForm();
+            } else {
+                showQuizRetry();
+            }
+        }, 650);
+    }
+
+    function showQuizRetry() {
+        const isAr = currentLang === 'ar';
+        if (elements.quizOptions) elements.quizOptions.classList.add('hidden');
+        if (elements.quizQuestion) {
+            elements.quizQuestion.textContent = isAr
+                ? 'نتيجة الاختبار'
+                : 'Quiz Result';
+        }
+        if (elements.quizScoreText) {
+            elements.quizScoreText.textContent = isAr
+                ? `حصلت على ${quizScore} من ${quizQuestions.length}. يجب الإجابة عن جميع الأسئلة بشكل صحيح (3/3) للحصول على الشهادة!`
+                : `You scored ${quizScore} out of ${quizQuestions.length}. Score 3/3 to unlock your certificate!`;
+        }
+        if (elements.btnQuizRetry) {
+            elements.btnQuizRetry.textContent = isAr ? 'حاول مرة أخرى' : 'Try Again';
+        }
+        if (elements.btnQuizClose) {
+            elements.btnQuizClose.textContent = isAr ? 'إغلاق' : 'Close';
+        }
+        if (elements.quizResult) elements.quizResult.classList.remove('hidden');
+        if (elements.btnQuizRetry) elements.btnQuizRetry.focus({ preventScroll: true });
+    }
+
+    function showCertificateForm() {
+        const isAr = currentLang === 'ar';
+        if (elements.quizContainer) elements.quizContainer.classList.add('hidden');
+        if (elements.certBadge) {
+            elements.certBadge.textContent = isAr ? 'إنجاز رائع · 3 / 3' : 'Perfect Score · 3 / 3';
+        }
+        if (elements.certTitle) {
+            elements.certTitle.textContent = isAr ? 'تهانينا! لقد أتممت الاختبار بنجاح' : 'Congratulations! You Passed!';
+        }
+        if (elements.certSubtitle) {
+            elements.certSubtitle.textContent = isAr
+                ? 'أدخل اسمك لإصدار وتحميل شهادة التميز الخاصة بك من فريق The Space Keepers.'
+                : 'Enter your name to generate and download your Space Keepers certificate.';
+        }
+        if (elements.certNameInput) {
+            elements.certNameInput.placeholder = isAr ? 'اكتب اسمك هنا...' : 'Enter your name...';
+        }
+        if (elements.btnGenerateCert) {
+            elements.btnGenerateCert.textContent = isAr ? 'إصدار وتحميل الشهادة' : 'Generate & Download Certificate';
+        }
+        if (elements.btnCertClose) {
+            elements.btnCertClose.textContent = isAr ? 'إغلاق' : 'Close';
+        }
+        if (elements.certError) {
+            elements.certError.textContent = '';
+            elements.certError.classList.add('hidden');
+        }
+        if (elements.certificateContainer) elements.certificateContainer.classList.remove('hidden');
+        if (elements.certNameInput) elements.certNameInput.focus({ preventScroll: true });
+    }
+
+    function generateCertificate() {
+        const isAr = currentLang === 'ar';
+        const userName = elements.certNameInput ? elements.certNameInput.value.trim() : '';
+        if (!userName) {
+            if (elements.certError) {
+                elements.certError.textContent = isAr ? 'يرجى كتابة اسمك أولاً.' : 'Please enter your name first.';
+                elements.certError.classList.remove('hidden');
+            }
+            if (elements.certNameInput) elements.certNameInput.focus();
+            return;
+        }
+        if (elements.certError) {
+            elements.certError.textContent = '';
+            elements.certError.classList.add('hidden');
+        }
+
+        const canvas = elements.certCanvas;
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+        const img = new Image();
+        img.onload = () => {
+            canvas.width = img.naturalWidth || img.width;
+            canvas.height = img.naturalHeight || img.height;
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+            // Draw the participant's name centered on the certificate
+            ctx.save();
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.font = 'bold 42px "IBM Plex Sans Arabic", Arial, sans-serif';
+            ctx.fillStyle = '#ffcb6b';
+            ctx.shadowColor = 'rgba(0, 0, 0, 0.85)';
+            ctx.shadowBlur = 12;
+            ctx.fillText(userName, canvas.width / 2, canvas.height * 0.545);
+            ctx.restore();
+
+            const dataUrl = canvas.toDataURL('image/png');
+            const link = document.createElement('a');
+            link.href = dataUrl;
+            link.download = 'Space_Keepers_Certificate.png';
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+        };
+        img.onerror = () => {
+            if (elements.certError) {
+                elements.certError.textContent = isAr
+                    ? 'تعذر تحميل قالب الشهادة.'
+                    : 'Could not load certificate template.';
+                elements.certError.classList.remove('hidden');
+            }
+        };
+        img.src = 'assets/images/certificate.png';
     }
 
     /** Language change or window resize while the showcase is open: re-fill and re-paginate. */
     function refreshShowcaseText() {
         if (showStage !== 'focus' && showStage !== 'story') return;
-        elements.btnCloseDrawer.setAttribute('aria-label', uiText[currentLang].closeStory);
+        clearTimeout(storyTimer);
+        storyBusy = false;
+        if (elements.storyLive) elements.storyLive.classList.remove('is-fading');
+        elements.btnCloseDrawer.setAttribute('aria-label', t('closeStory'));
         fillIntroCard(currentArtifact);
+        if (quizActive && currentArtifact) {
+            const updatedQuiz = (currentArtifact[currentLang] && currentArtifact[currentLang].quiz)
+                || (currentArtifact.ar && currentArtifact.ar.quiz);
+            if (Array.isArray(updatedQuiz) && updatedQuiz.length > 0) {
+                quizQuestions = updatedQuiz;
+            }
+            if (elements.certificateContainer && !elements.certificateContainer.classList.contains('hidden')) {
+                showCertificateForm();
+            } else if (elements.quizResult && !elements.quizResult.classList.contains('hidden')) {
+                showQuizRetry();
+            } else {
+                renderQuizQuestion();
+            }
+        }
         if (showStage === 'story' && storyPages.length > 0) {
-            const chapter = storyPages[storyPageIndex] ? storyPages[storyPageIndex].chapter : 0;
+            const cur = storyPages[storyPageIndex];
+            const sec = cur ? cur.sectionIndex : 0;
+            const sub = cur ? cur.subIndex : 1;
+            const wasSources = cur && cur.kind === 'sources';
             buildStoryPages();
-            storyPageIndex = Math.max(0, storyPages.findIndex(p => p.chapter === chapter));
+            if (wasSources) {
+                const srcIdx = storyPages.findIndex(p => p.kind === 'sources');
+                storyPageIndex = srcIdx >= 0 ? srcIdx : Math.max(0, storyPages.length - 1);
+            } else {
+                let idx = storyPages.findIndex(p => p.sectionIndex === sec && p.subIndex === sub);
+                if (idx < 0) idx = storyPages.findIndex(p => p.sectionIndex === sec);
+                storyPageIndex = Math.max(0, idx);
+            }
             renderStoryPage();
         }
+    }
+
+    function renderSiteCredits(lang) {
+        const footer = elements.siteCredits;
+        if (!footer) return;
+        const isAr = lang === 'ar';
+        footer.setAttribute('aria-label', t('sourcesCreditsBtn', lang));
+
+        // Deduplicate the 4 official NASA sources
+        const seenUrls = new Set();
+        const uniqueSources = [];
+        spaceArtifacts.forEach(art => {
+            (art.sources || []).forEach(src => {
+                if (!seenUrls.has(src.url)) {
+                    seenUrls.add(src.url);
+                    uniqueSources.push(src);
+                }
+            });
+        });
+
+        const creditsItems = isAr ? [
+            { text: "Moon map: NASA's Scientific Visualization Studio, CGI Moon Kit" },
+            { text: 'Mars map: NASA / JPL / USGS, Viking MDIM 2.1' },
+            { text: '3D models: NASA 3D Resources (NASA/JPL-Caltech)' },
+            { text: 'مجسم LRV: توليد ثلاثي الأبعاد بالذكاء الاصطناعي استناداً إلى صورة مرجعية للعربة القمرية (AI-generated 3D visualization based on the provided Lunar Rover reference image).' },
+            { text: 'مجسم رائد الفضاء: NASA 3D Resources — بدلة الفضاء Z-2', url: 'https://science.nasa.gov/3d-resources/z2-spacesuit/' }
+        ] : [
+            { text: "Moon map: NASA's Scientific Visualization Studio, CGI Moon Kit" },
+            { text: 'Mars map: NASA / JPL / USGS, Viking MDIM 2.1' },
+            { text: '3D models: NASA 3D Resources (NASA/JPL-Caltech)' },
+            { text: 'LRV model: AI-generated 3D visualization based on the provided Lunar Rover reference image.' },
+            { text: 'Astronaut model: NASA 3D Resources — Z-2 Spacesuit', url: 'https://science.nasa.gov/3d-resources/z2-spacesuit/' }
+        ];
+
+        const wrap = document.createElement('div');
+        wrap.className = 'site-credits-wrap';
+
+        const attrBox = document.createElement('div');
+        attrBox.className = 'site-credits-attribution';
+
+        const officialP = document.createElement('p');
+        officialP.className = 'site-credits-official';
+        officialP.lang = 'en';
+        officialP.dir = 'ltr';
+        officialP.textContent = t('attributionOfficial', lang);
+        attrBox.appendChild(officialP);
+
+        if (isAr) {
+            const arP = document.createElement('p');
+            arP.className = 'site-credits-ar';
+            arP.textContent = t('attributionAr', lang);
+            attrBox.appendChild(arP);
+        }
+
+        const discP = document.createElement('p');
+        discP.className = 'site-credits-disclaimer';
+        discP.textContent = t('disclaimer', lang);
+        attrBox.appendChild(discP);
+
+        const toggleBtn = document.createElement('button');
+        toggleBtn.type = 'button';
+        toggleBtn.id = 'btn-toggle-credits';
+        toggleBtn.className = 'credits-toggle-btn';
+        toggleBtn.setAttribute('aria-expanded', creditsExpanded ? 'true' : 'false');
+        toggleBtn.setAttribute('aria-controls', 'credits-details');
+        toggleBtn.textContent = t('sourcesCreditsBtn', lang);
+        attrBox.appendChild(toggleBtn);
+
+        const inner = document.createElement('div');
+        inner.id = 'credits-details';
+        inner.className = 'site-credits-inner';
+        if (!creditsExpanded) inner.hidden = true;
+
+        toggleBtn.addEventListener('click', () => {
+            creditsExpanded = !creditsExpanded;
+            inner.hidden = !creditsExpanded;
+            toggleBtn.setAttribute('aria-expanded', creditsExpanded ? 'true' : 'false');
+        });
+
+        const srcCol = document.createElement('div');
+        const srcTitle = document.createElement('h3');
+        srcTitle.className = 'site-credits-title';
+        srcTitle.textContent = isAr ? 'المصادر الرسمية (ناسا)' : 'Official Sources (NASA)';
+        const srcList = document.createElement('ul');
+        srcList.className = 'site-credits-list';
+        uniqueSources.forEach(src => {
+            const li = document.createElement('li');
+            const a = document.createElement('a');
+            const label = isAr ? src.title_ar : src.title_en;
+            a.href = src.url;
+            a.target = '_blank';
+            a.rel = 'noopener noreferrer';
+            a.textContent = label;
+            a.setAttribute('aria-label', isAr ? `${label} (يفتح في نافذة جديدة)` : `${label} (opens in a new tab)`);
+            li.appendChild(a);
+            srcList.appendChild(li);
+        });
+        srcCol.append(srcTitle, srcList);
+
+        const credCol = document.createElement('div');
+        const credTitle = document.createElement('h3');
+        credTitle.className = 'site-credits-title';
+        credTitle.textContent = t('sourcesCreditsBtn', lang);
+        const credList = document.createElement('ul');
+        credList.className = 'site-credits-list';
+        creditsItems.forEach(item => {
+            const li = document.createElement('li');
+            if (item.url) {
+                const a = document.createElement('a');
+                a.href = item.url;
+                a.target = '_blank';
+                a.rel = 'noopener noreferrer';
+                a.textContent = item.text;
+                a.setAttribute('aria-label', isAr ? `${item.text} (يفتح في نافذة جديدة)` : `${item.text} (opens in a new tab)`);
+                li.appendChild(a);
+            } else {
+                li.textContent = item.text;
+            }
+            credList.appendChild(li);
+        });
+        credCol.append(credTitle, credList);
+
+        inner.append(srcCol, credCol);
+        wrap.append(attrBox, inner);
+        footer.replaceChildren(wrap);
     }
 
     /**
      * Language Localization
      */
-    function setLanguage(lang) {
-        currentLang = lang;
-        const strings = uiText[lang];
+    function setLanguage(lang, options = {}) {
+        const targetLang = lang === 'en' ? 'en' : 'ar';
+        currentLang = targetLang;
+        const isAr = targetLang === 'ar';
 
-        elements.html.lang = lang;
-        elements.html.dir = lang === 'ar' ? 'rtl' : 'ltr';
+        elements.html.lang = targetLang;
+        elements.html.dir = isAr ? 'rtl' : 'ltr';
+        document.title = `${t('siteTitle', targetLang)} | Space Echoes`;
 
-        elements.langToggle.textContent = strings.langToggle;
-        elements.mainTitle.textContent = strings.siteTitle;
-        elements.mainDesc.textContent = strings.siteDesc;
+        if (elements.skipLink) {
+            elements.skipLink.textContent = t('skipLink', targetLang);
+        }
+        if (elements.heroChallengeBadge) {
+            elements.heroChallengeBadge.textContent = t('challengeBadge', targetLang);
+        }
+        if (elements.heroChallengeTitle) {
+            elements.heroChallengeTitle.textContent = isAr
+                ? t('challengeArName', targetLang)
+                : t('challengeOfficialName', targetLang);
+        }
+
+        if (elements.langToggleLabel) {
+            elements.langToggleLabel.textContent = t('langToggle', targetLang);
+        } else {
+            elements.langToggle.textContent = t('langToggle', targetLang);
+        }
+        elements.langToggle.setAttribute('aria-label', t('langToggleAria', targetLang));
+
+        const titleHighlight = document.createElement('span');
+        titleHighlight.className = 'hero-title-highlight';
+        titleHighlight.textContent = t('siteTitleHighlight', targetLang);
+        elements.mainTitle.replaceChildren(
+            document.createTextNode(t('siteTitlePrefix', targetLang)),
+            titleHighlight
+        );
+        elements.mainDesc.textContent = t('siteDesc', targetLang);
 
         if (elements.btnBackToOverview) {
-            elements.btnBackToOverview.textContent = strings.backToPlanets;
+            elements.btnBackToOverview.textContent = t('backToPlanets', targetLang);
+            elements.btnBackToOverview.setAttribute('aria-label', isAr ? 'العودة لنظرة الكواكب' : 'Back to Planets Overview');
+        }
+        if (elements.btnMobileSources) {
+            elements.btnMobileSources.textContent = t('mobileSourcesBtn', targetLang);
+        }
+        if (elements.mobileSourcesPopover) {
+            elements.mobileSourcesPopover.setAttribute('aria-label', t('mobileSourcesBtn', targetLang));
+        }
+        if (elements.mobileSourcesDisclaimer) {
+            elements.mobileSourcesDisclaimer.textContent = t('disclaimer', targetLang);
+        }
+        if (elements.stageAttribution) {
+            elements.stageAttribution.textContent = t('attributionOfficial', targetLang);
         }
 
         if (viewMode === 'overview') {
-            elements.spaceCanvas.setAttribute('aria-label', strings.overviewSphereAria);
+            elements.spaceCanvas.setAttribute('aria-label', t('overviewSphereAria', targetLang));
         } else {
-            elements.spaceCanvas.setAttribute('aria-label', currentBody === 'Moon' ? strings.moonSphereAria : strings.marsSphereAria);
+            elements.spaceCanvas.setAttribute('aria-label', currentBody === 'Moon' ? t('moonSphereAria', targetLang) : t('marsSphereAria', targetLang));
         }
 
-        elements.btnDiscoverStory.textContent = strings.discoverStory;
-        elements.btnCloseDrawer.setAttribute('aria-label', strings.closeStory);
+        elements.btnDiscoverStory.textContent = t('discoverStory', targetLang);
+        elements.btnCloseDrawer.setAttribute('aria-label', t('closeStory', targetLang));
 
-        if (elements.scrollPrompt && strings.scrollPrompt) {
-            elements.scrollPrompt.textContent = strings.scrollPrompt;
+        if (elements.scrollPrompt) {
+            elements.scrollPrompt.textContent = t('scrollPrompt', targetLang);
         }
 
         const a11yAstronaut = document.getElementById('astronaut-a11y');
         if (a11yAstronaut) {
-            a11yAstronaut.setAttribute('aria-label', lang === 'ar' ? 'رائد فضاء ناسا يطفو في الفضاء بجانب الكوكب' : 'NASA astronaut floating in space beside the planet');
+            a11yAstronaut.setAttribute('aria-label', isAr ? 'رائد فضاء ناسا يطفو في الفضاء بجانب الكوكب' : 'NASA astronaut floating in space beside the planet');
         }
 
-        if (elements.artifactScaleNote) {
-            elements.artifactScaleNote.textContent = SCALE_NOTE_TEXT[lang];
+        if (hoveredMarker && hoveredMarker.userData && hoveredMarker.userData.artifact && elements.markerTooltip && !elements.markerTooltip.classList.contains('hidden')) {
+            const hoveredArt = hoveredMarker.userData.artifact;
+            const hoveredLangData = hoveredArt[targetLang] || hoveredArt.en || {};
+            elements.markerTooltip.textContent = hoveredLangData.name || hoveredArt.id;
         }
+
         updateA11yArtifactsNav();
-
         updateAstronautCaption();
+        renderSiteCredits(targetLang);
         refreshShowcaseText();
+        updateStageAttributionVisibility();
+
+        try {
+            localStorage.setItem('spaceEchoesLang', targetLang);
+        } catch (e) { /* storage disabled */ }
+
+        if (options.announce) {
+            if (elements.langLive) {
+                elements.langLive.textContent = '';
+                elements.langLive.textContent = t('langSwitchedAnnouncement', targetLang);
+            }
+            elements.langToggle.focus({ preventScroll: true });
+        }
     }
 
     /**
      * Setup Event Listeners
      */
     function setupEventListeners() {
+        if (elements.heroTeamLogo) {
+            elements.heroTeamLogo.addEventListener('load', updateTeamLogoTransform);
+        }
+
         elements.langToggle.addEventListener('click', () => {
-            setLanguage(currentLang === 'ar' ? 'en' : 'ar');
+            setLanguage(currentLang === 'ar' ? 'en' : 'ar', { announce: true });
         });
+
+        if (elements.btnMobileSources && elements.mobileSourcesPopover) {
+            elements.btnMobileSources.addEventListener('click', () => {
+                const isOpen = !elements.mobileSourcesPopover.classList.contains('hidden');
+                elements.mobileSourcesPopover.classList.toggle('hidden', isOpen);
+                elements.btnMobileSources.setAttribute('aria-expanded', isOpen ? 'false' : 'true');
+            });
+        }
 
         window.addEventListener('scroll', onWindowScroll, { passive: true });
 
@@ -2138,7 +2885,38 @@ const SCALE_NOTE_TEXT = {
         // Story Drawer controls
         elements.btnDiscoverStory.addEventListener('click', startStory);
         elements.btnStoryNext.addEventListener('click', handleStoryNext);
+        if (elements.storyPanel) {
+            elements.storyPanel.addEventListener('click', e => {
+                if (typeWriterSkipFn && !e.target.closest('button, a')) {
+                    typeWriterSkipFn();
+                }
+            });
+        }
         elements.btnCloseDrawer.addEventListener('click', () => closeShowcase());
+        if (elements.btnQuizRetry) {
+            elements.btnQuizRetry.addEventListener('click', () => {
+                quizIndex = 0;
+                quizScore = 0;
+                renderQuizQuestion();
+            });
+        }
+        if (elements.btnQuizClose) {
+            elements.btnQuizClose.addEventListener('click', () => closeShowcase());
+        }
+        if (elements.btnGenerateCert) {
+            elements.btnGenerateCert.addEventListener('click', generateCertificate);
+        }
+        if (elements.btnCertClose) {
+            elements.btnCertClose.addEventListener('click', () => closeShowcase());
+        }
+        if (elements.certNameInput) {
+            elements.certNameInput.addEventListener('keydown', e => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    generateCertificate();
+                }
+            });
+        }
 
         // Accessibility: Trap focus inside modal drawer while open
         if (elements.artifactDrawer) {
@@ -2174,15 +2952,23 @@ const SCALE_NOTE_TEXT = {
     function init() {
         setupEventListeners();
         initSpaceScene();
-        setLanguage('ar');
-        onWindowScroll();
 
-        // Optional URL query params (?artifact=lrv&lang=ar) for direct showcase & testing
+        let initialLang = 'ar';
+        try {
+            const savedLang = localStorage.getItem('spaceEchoesLang');
+            if (savedLang === 'en' || savedLang === 'ar') initialLang = savedLang;
+        } catch (e) { /* storage disabled */ }
+
         const urlParams = new URLSearchParams(window.location.search);
         const queryLang = urlParams.get('lang');
         if (queryLang === 'en' || queryLang === 'ar') {
-            setLanguage(queryLang);
+            initialLang = queryLang;
         }
+
+        setLanguage(initialLang);
+        onWindowScroll();
+
+        // Optional URL query params (?artifact=lrv&lang=ar) for direct showcase & testing
         const queryArtifactId = urlParams.get('artifact');
         if (queryArtifactId) {
             const targetArt = spaceArtifacts.find(a => a.id === queryArtifactId);
