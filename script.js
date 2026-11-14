@@ -1118,6 +1118,10 @@ let createGlobe;
     }
 
     function init() {
+        const bgVideo = document.getElementById('bg-video');
+        if (bgVideo) {
+            bgVideo.play().catch(() => {});
+        }
         setupEventListeners();
         initSpaceScene();
         setLanguage('ar');

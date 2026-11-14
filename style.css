@@ -83,16 +83,35 @@ body.space-app {
     z-index: 1;
     overflow: hidden;
     background-color: var(--color-xiketic);
-    background-image: 
-        radial-gradient(ellipse at 50% 35%, rgba(61, 64, 105, 0.45) 0%, rgba(31, 36, 76, 0.65) 50%, rgba(16, 17, 38, 0.96) 90%),
-        url('assets/images/cosmic-stars-bg.jpg');
-    background-size: cover;
-    background-position: center;
-    background-repeat: no-repeat;
     pointer-events: auto;
 }
 
+.bg-video {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    z-index: 1;
+    pointer-events: none;
+    opacity: 0.88;
+}
+
+.bg-video-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 2;
+    background: radial-gradient(ellipse at 50% 40%, rgba(61, 64, 105, 0.22) 0%, rgba(31, 36, 76, 0.42) 55%, rgba(16, 17, 38, 0.82) 95%);
+    pointer-events: none;
+}
+
 #space-canvas {
+    position: relative;
+    z-index: 3;
     width: 100%;
     height: 100%;
     display: block;
