@@ -7,35 +7,34 @@
     <title>تُركت في صمت، خُلِّدت في العلم | Space Echoes</title>
     <!-- Three.js r128 from CDN -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <!-- Three.js GLTFLoader (CDN with local fallback) -->
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
-    <script>
-        if (typeof THREE.GLTFLoader === 'undefined') {
-            document.write('<script src="assets/js/GLTFLoader.js"><\/script>');
-        }
-    </script>
+    <!-- Three.js Starfield 3D Celestial Background -->
+    <script src="starfield.js"></script>
+    <!-- Three.js DRACOLoader & GLTFLoader for 3D Models -->
+    <script src="assets/js/DRACOLoader.js"></script>
+    <script src="assets/js/GLTFLoader.js"></script>
     <!-- Link CSS stylesheet -->
     <link rel="stylesheet" href="style.css">
 </head>
 
 <body class="space-app">
+    <!-- Starfield 3D Celestial Background Canvas (Fixed behind all content) -->
+    <canvas id="starfield" aria-hidden="true"></canvas>
+
     <!-- Skip to main content link for accessibility -->
     <a href="#space-canvas" class="skip-link">الانتقال إلى المحتوى الرئيسي</a>
 
     <!-- Top navigation bar -->
     <nav class="top-nav" aria-label="الشريط العلوي">
         <button id="btn-back-to-overview" class="back-nav-btn hidden" aria-label="العودة لنظرة الكواكب">← نظرة عامة على الكواكب</button>
+        <button id="motion-toggle" class="motion-btn" aria-label="إيقاف حركة الخلفية" title="إيقاف الحركة">
+            <span class="motion-icon" aria-hidden="true">⏸</span>
+            <span class="motion-text">إيقاف الحركة</span>
+        </button>
         <button id="lang-toggle" class="lang-btn" aria-label="تبديل اللغة">English</button>
     </nav>
 
     <!-- Fullscreen 3D Canvas Space Stage (Fixed in Background) -->
     <div class="fullscreen-space-stage">
-        <!-- Ambient Space Video Background (Seamless Ping-Pong Loop) -->
-        <video id="bg-video" class="bg-video" autoplay loop muted playsinline preload="auto" aria-hidden="true">
-            <source src="assets/videos/background-pingpong.mp4" type="video/mp4">
-        </video>
-        <!-- Overlay tint for subtle contrast and palette blending -->
-        <div class="bg-video-overlay" aria-hidden="true"></div>
         <!-- Floating Astronaut Quote / Caption -->
         <div id="astronaut-caption" class="astronaut-caption moon-theme hidden-caption" aria-live="polite">
             <span id="astronaut-caption-text" class="caption-text">آثار خالدة على تربة فضية</span>

@@ -41,15 +41,27 @@
 html {
     scroll-behavior: smooth;
     overflow-x: hidden;
-    background-color: var(--bg-dark);
+    background-color: #05060a;
 }
 
 body.space-app {
     width: 100%;
     min-height: 100vh;
     overflow-x: hidden;
-    background-color: var(--bg-dark);
+    background-color: transparent;
     color: var(--text-main);
+}
+
+/* 3D Celestial Starfield Canvas (Fixed behind all content) */
+#starfield {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: -1;
+    pointer-events: none;
+    display: block;
 }
 
 /* Accessibility: Skip Link */
@@ -73,7 +85,7 @@ body.space-app {
     outline: 3px solid #ffffff;
 }
 
-/* Fullscreen 3D Canvas Space Stage (Fixed in Background) */
+/* Fullscreen 3D Canvas Space Stage (Transparent container for Moon & Mars globes) */
 .fullscreen-space-stage {
     position: fixed;
     top: 0;
@@ -82,31 +94,8 @@ body.space-app {
     height: 100vh;
     z-index: 1;
     overflow: hidden;
-    background-color: var(--color-xiketic);
+    background: transparent;
     pointer-events: auto;
-}
-
-.bg-video {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    z-index: 1;
-    pointer-events: none;
-    opacity: 0.88;
-}
-
-.bg-video-overlay {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    z-index: 2;
-    background: radial-gradient(ellipse at 50% 40%, rgba(61, 64, 105, 0.22) 0%, rgba(31, 36, 76, 0.42) 55%, rgba(16, 17, 38, 0.82) 95%);
-    pointer-events: none;
 }
 
 #space-canvas {
@@ -124,55 +113,50 @@ body.space-app {
     outline-offset: -5px;
 }
 
-/* Floating Astronaut Quote / Caption */
+/* Floating Astronaut Quote / Caption (Pure text without frame, positioned lower) */
 .astronaut-caption {
     position: absolute;
     z-index: 5;
     pointer-events: none;
-    padding: 11px 26px;
-    border-radius: 35px;
-    font-size: clamp(1.1rem, 2.2vw, 1.55rem);
-    font-weight: 700;
-    letter-spacing: 0.3px;
+    padding: 0;
+    margin: 0;
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    backdrop-filter: none !important;
+    font-size: clamp(1.35rem, 2.8vw, 2.2rem);
+    font-weight: 800;
+    letter-spacing: 0.5px;
     white-space: nowrap;
-    backdrop-filter: blur(12px);
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
     transition: 
-        left 1.2s cubic-bezier(0.22, 1, 0.36, 1),
-        right 1.2s cubic-bezier(0.22, 1, 0.36, 1),
-        top 1.2s cubic-bezier(0.22, 1, 0.36, 1),
-        transform 1.2s cubic-bezier(0.22, 1, 0.36, 1),
-        opacity 0.6s ease,
-        color 0.6s ease,
-        border-color 0.6s ease,
-        background-color 0.6s ease;
+        left 0.8s cubic-bezier(0.22, 1, 0.36, 1),
+        right 0.8s cubic-bezier(0.22, 1, 0.36, 1),
+        top 0.8s cubic-bezier(0.22, 1, 0.36, 1),
+        transform 0.4s cubic-bezier(0.22, 1, 0.36, 1),
+        opacity 0.35s ease,
+        color 0.35s ease,
+        text-shadow 0.35s ease;
     will-change: transform, left, right, top, opacity;
 }
 
-/* When Moon is foreground (astronaut is on the right of the Moon) */
+/* When Moon is foreground (astronaut on the right, quote lower) */
 .astronaut-caption.moon-theme {
-    top: 50%;
-    right: 18%;
+    top: 70%;
+    right: 15%;
     left: auto;
     transform: translateY(-50%) translateZ(0);
-    color: #e2e6f0; /* Lunar silvery gray */
-    background: rgba(31, 36, 76, 0.72);
-    border: 1px solid rgba(226, 230, 240, 0.45);
-    text-shadow: 0 0 16px rgba(226, 230, 240, 0.6), 0 2px 8px rgba(0, 0, 0, 0.95);
-    box-shadow: 0 10px 30px rgba(16, 17, 38, 0.8), 0 0 25px rgba(158, 160, 212, 0.25);
+    color: #e4e8f5; /* Lunar silvery gray */
+    text-shadow: 0 0 24px rgba(228, 232, 245, 0.85), 0 3px 14px rgba(0, 0, 0, 0.95);
 }
 
-/* When Mars is foreground (astronaut floats to the other side / near Mars) */
+/* When Mars is foreground (astronaut on the other side, quote lower) */
 .astronaut-caption.mars-theme {
-    top: 50%;
-    left: 18%;
+    top: 70%;
+    left: 15%;
     right: auto;
     transform: translateY(-50%) translateZ(0);
-    color: #ff854d; /* Martian orange to rusty brown */
-    background: rgba(45, 20, 15, 0.8);
-    border: 1px solid rgba(255, 133, 77, 0.5);
-    text-shadow: 0 0 18px rgba(255, 112, 67, 0.7), 0 2px 8px rgba(0, 0, 0, 0.95);
-    box-shadow: 0 10px 30px rgba(16, 17, 38, 0.8), 0 0 25px rgba(255, 90, 54, 0.35);
+    color: #ff8044; /* Martian orange to rusty brown */
+    text-shadow: 0 0 26px rgba(255, 128, 68, 0.85), 0 3px 14px rgba(0, 0, 0, 0.95);
 }
 
 /* Hidden state (during Hero title or Explore mode) */
@@ -184,12 +168,12 @@ body.space-app {
 
 @media (max-width: 900px) {
     .astronaut-caption.moon-theme {
-        right: 8%;
-        top: 70%;
+        right: 6%;
+        top: 75%;
     }
     .astronaut-caption.mars-theme {
-        left: 8%;
-        top: 70%;
+        left: 6%;
+        top: 75%;
     }
 }
 
@@ -200,6 +184,9 @@ body.space-app {
     left: 24px;
     z-index: 50;
     pointer-events: auto;
+    display: flex;
+    align-items: center;
+    gap: 12px;
 }
 
 html[dir="rtl"] .top-nav {
@@ -207,23 +194,45 @@ html[dir="rtl"] .top-nav {
     right: 24px;
 }
 
+.motion-btn,
 .lang-btn {
     background-color: rgba(31, 36, 76, 0.82);
     color: var(--text-muted);
     border: 1px solid var(--surface-border);
-    padding: 10px 26px;
+    padding: 10px 22px;
     border-radius: 30px;
     cursor: pointer;
-    font-size: 0.95rem;
+    font-size: 0.92rem;
     font-weight: 700;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
     transition: all 0.25s ease;
     backdrop-filter: blur(10px);
     box-shadow: 0 4px 15px rgba(16, 17, 38, 0.6);
+    user-select: none;
 }
 
+.motion-btn:hover,
+.motion-btn:focus-visible,
 .lang-btn:hover,
 .lang-btn:focus-visible {
     background-color: var(--color-purple-navy);
+    color: #ffffff;
+    border-color: var(--primary-blue);
+    outline: 2px solid var(--primary-blue);
+}
+
+.motion-btn.is-paused {
+    border-color: var(--accent-gold);
+    color: #ffffff;
+}
+
+.motion-icon {
+    font-size: 0.85rem;
+    line-height: 1;
+}
     color: #ffffff;
     border-color: var(--primary-blue);
     outline: 2px solid var(--primary-blue);

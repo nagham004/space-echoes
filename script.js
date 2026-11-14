@@ -26,6 +26,7 @@ let createGlobe;
     let moonMarkerMeshes = [];
     let marsMarkerMeshes = [];
     let hoveredMarker = null;
+    let hoveredPlanet = null;
     let astronautGroup;
 
     // Smooth Lerp Targets
@@ -37,9 +38,9 @@ let createGlobe;
         cameraPos: new THREE.Vector3(0, 0, 4.4),
         moonGlow: 0.0,
         marsGlow: 0.0,
-        astronautPos: new THREE.Vector3(0.85, -0.15, 1.0),
-        astronautScale: 0.55,
-        astronautRotY: -0.4
+        astronautPos: new THREE.Vector3(1.25, 0.1, 1.2),
+        astronautScale: 0.95,
+        astronautRotY: -0.35
     };
 
     let autoRotate = !matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -350,13 +351,14 @@ let createGlobe;
     }
 
     /**
-     * Update Floating Astronaut Caption Text & Theme
+     * Update Floating Planet Caption Text & Theme on Hover
      */
     function updateAstronautCaption() {
         if (!elements.astronautCaption || !elements.astronautCaptionText) return;
         const strings = uiText[currentLang];
 
-        if (viewMode === 'explore' || planetEntrance < 0.25) {
+        // The quote appears ONLY when hovering over the planet that is currently in the foreground
+        if (viewMode === 'explore' || planetEntrance < 0.25 || !hoveredPlanet || hoveredPlanet !== activeForeground) {
             elements.astronautCaption.classList.add('hidden-caption');
             return;
         }
@@ -375,7 +377,7 @@ let createGlobe;
     }
 
     /**
-     * Load Astronaut 3D Model (GLTF)
+     * Load Astronaut 3D Model (GLTF with Draco compression support)
      */
     function loadAstronautModel() {
         astronautGroup = new THREE.Group();
@@ -390,17 +392,27 @@ let createGlobe;
         }
 
         const loader = new THREE.GLTFLoader();
+
+        // Configure DRACOLoader for Draco compressed meshes
+        if (typeof THREE.DRACOLoader !== 'undefined') {
+            const dracoLoader = new THREE.DRACOLoader();
+            dracoLoader.setDecoderPath('assets/js/draco/');
+            dracoLoader.setDecoderConfig({ type: 'wasm' });
+            loader.setDRACOLoader(dracoLoader);
+        }
+
         loader.load(
             ASTRONAUT_MODEL_PATH,
             gltf => {
                 const model = gltf.scene || (gltf.scenes && gltf.scenes[0]);
                 if (!model) return;
 
+                // Center and normalize model bounds
                 const box = new THREE.Box3().setFromObject(model);
                 const center = box.getCenter(new THREE.Vector3());
                 const size = box.getSize(new THREE.Vector3());
                 const maxDim = Math.max(size.x, size.y, size.z) || 1;
-                const normScale = 1.45 / maxDim;
+                const normScale = 1.95 / maxDim;
 
                 model.position.x = -center.x * normScale;
                 model.position.y = -center.y * normScale;
@@ -412,13 +424,26 @@ let createGlobe;
                         node.castShadow = true;
                         node.receiveShadow = true;
                         if (node.material) {
-                            node.material.roughness = 0.55;
-                            node.material.metalness = 0.2;
+                            node.material.roughness = 0.45;
+                            node.material.metalness = 0.15;
+                            if (node.material.map) {
+                                node.material.map.encoding = THREE.sRGBEncoding;
+                            }
                         }
                     }
                 });
 
+                // Add dedicated soft key-light that moves with the astronaut for cinematic suit illumination
+                const suitLight = new THREE.PointLight(0xfff5ea, 0.9, 5.0);
+                suitLight.position.set(0.6, 1.2, 1.8);
+                astronautGroup.add(suitLight);
+
+                const suitRimLight = new THREE.DirectionalLight(0x8fa4d8, 0.6);
+                suitRimLight.position.set(-1.0, 1.0, -1.0);
+                astronautGroup.add(suitRimLight);
+
                 astronautGroup.add(model);
+                console.log('Astronaut 3D model loaded and ready.');
             },
             undefined,
             err => {
@@ -441,8 +466,8 @@ let createGlobe;
             targets.marsScale = 0.88;
 
             // Astronaut floats to the right of Moon
-            targets.astronautPos.set(0.85, -0.15, 1.0);
-            targets.astronautRotY = -0.4;
+            targets.astronautPos.set(1.25, 0.1, 1.2);
+            targets.astronautRotY = -0.35;
         } else {
             targets.marsPos.set(0.7, -0.15, 0.5);
             targets.marsScale = 1.3;
@@ -451,8 +476,8 @@ let createGlobe;
             targets.moonScale = 0.88;
 
             // Astronaut floats to the other side (left of Mars)
-            targets.astronautPos.set(-0.85, -0.15, 1.0);
-            targets.astronautRotY = 0.4;
+            targets.astronautPos.set(-1.25, 0.1, 1.2);
+            targets.astronautRotY = 0.35;
         }
 
         updateAstronautCaption();
@@ -615,6 +640,17 @@ let createGlobe;
             canvas.style.cursor = 'grab';
         });
 
+        canvas.addEventListener('pointerleave', () => {
+            if (viewMode === 'overview') {
+                targets.moonGlow = 0.0;
+                targets.marsGlow = 0.0;
+                if (hoveredPlanet !== null) {
+                    hoveredPlanet = null;
+                    updateAstronautCaption();
+                }
+            }
+        });
+
         canvas.addEventListener('wheel', e => {
             if (viewMode === 'explore') {
                 e.preventDefault();
@@ -681,6 +717,10 @@ let createGlobe;
                 targets.moonGlow = 0.0;
                 targets.marsGlow = 0.0;
                 elements.spaceCanvas.style.cursor = 'default';
+                if (hoveredPlanet !== null) {
+                    hoveredPlanet = null;
+                    updateAstronautCaption();
+                }
                 return;
             }
 
@@ -690,19 +730,36 @@ let createGlobe;
                 const hit = intersects[0].object;
                 elements.spaceCanvas.style.cursor = 'pointer';
 
+                let newHovered = null;
                 if (hit === moonMesh) {
                     targets.moonGlow = 1.0;
                     targets.marsGlow = 0.0;
+                    newHovered = 'Moon';
                 } else if (hit === marsMesh) {
                     targets.marsGlow = 1.0;
                     targets.moonGlow = 0.0;
+                    newHovered = 'Mars';
+                }
+
+                if (hoveredPlanet !== newHovered) {
+                    hoveredPlanet = newHovered;
+                    updateAstronautCaption();
                 }
             } else {
                 targets.moonGlow = 0.0;
                 targets.marsGlow = 0.0;
                 elements.spaceCanvas.style.cursor = 'grab';
+
+                if (hoveredPlanet !== null) {
+                    hoveredPlanet = null;
+                    updateAstronautCaption();
+                }
             }
         } else {
+            if (hoveredPlanet !== null) {
+                hoveredPlanet = null;
+                updateAstronautCaption();
+            }
             const currentMeshes = currentBody === 'Moon' ? moonMarkerMeshes : marsMarkerMeshes;
             const intersects = raycaster.intersectObjects(currentMeshes, true);
 
@@ -898,7 +955,7 @@ let createGlobe;
             const tiltX = Math.sin(time * 0.5) * 0.06;
             const tiltZ = Math.cos(time * 0.7) * 0.05;
 
-            const yScrollOffset = (viewMode === 'overview') ? (1 - planetEntrance) * -4.2 : 0;
+            const yScrollOffset = (viewMode === 'overview') ? (1 - planetEntrance) * -2.2 : 0;
             const targetX = targets.astronautPos.x;
             const targetY = targets.astronautPos.y + floatY + yScrollOffset;
             const targetZ = targets.astronautPos.z + floatZ;
@@ -1161,6 +1218,10 @@ let createGlobe;
             elements.scrollPrompt.textContent = strings.scrollPrompt;
         }
 
+        if (window.Starfield && typeof window.Starfield.updateUI === 'function') {
+            window.Starfield.updateUI();
+        }
+
         updateAstronautCaption();
     }
 
@@ -1205,10 +1266,6 @@ let createGlobe;
     }
 
     function init() {
-        const bgVideo = document.getElementById('bg-video');
-        if (bgVideo) {
-            bgVideo.play().catch(() => {});
-        }
         setupEventListeners();
         initSpaceScene();
         setLanguage('ar');
