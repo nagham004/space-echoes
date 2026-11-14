@@ -67,11 +67,7 @@ const uiText = {
         clickToBringForward: "Click to bring forward →",
         scrollPrompt: "Scroll down to explore",
         moonQuote: "Eternal footprints on silver soil",
-        marsQuote: "A journey into the heart of red dust",
-        pauseMotion: "Pause Motion",
-        playMotion: "Play Motion",
-        motionToggleAriaPause: "Pause background starfield motion",
-        motionToggleAriaPlay: "Play background starfield motion"
+        marsQuote: "A journey into the heart of red dust"
     },
     ar: {
         siteTitle: "تُركت في صمت، خُلِّدت في العلم",
@@ -113,11 +109,7 @@ const uiText = {
         clickToBringForward: "انقر لتقديمه للأمام ←",
         scrollPrompt: "انزل للأسفل للاستكشاف",
         moonQuote: "آثار خالدة على تربة فضية",
-        marsQuote: "رحلة في قلب الغبار الأحمر",
-        pauseMotion: "إيقاف الحركة",
-        playMotion: "تشغيل الحركة",
-        motionToggleAriaPause: "إيقاف حركة حقل النجوم في الخلفية",
-        motionToggleAriaPlay: "تشغيل حركة حقل النجوم في الخلفية"
+        marsQuote: "رحلة في قلب الغبار الأحمر"
     }
 };
 

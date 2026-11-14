@@ -38,8 +38,8 @@ let createGlobe;
         cameraPos: new THREE.Vector3(0, 0, 4.4),
         moonGlow: 0.0,
         marsGlow: 0.0,
-        astronautPos: new THREE.Vector3(1.25, 0.1, 1.2),
-        astronautScale: 0.95,
+        astronautPos: new THREE.Vector3(1.10, 0.0, 0.6),
+        astronautScale: 1.0,
         astronautRotY: -0.35
     };
 
@@ -386,6 +386,14 @@ let createGlobe;
         astronautGroup.visible = false;
         scene.add(astronautGroup);
 
+        // Natural illumination matching planets: HemisphereLight (sky + ground fill) + DirectionalLight (Sun key)
+        const hemiLight = new THREE.HemisphereLight(0xffffff, 0x1a1e36, 0.95);
+        astronautGroup.add(hemiLight);
+
+        const dirLight = new THREE.DirectionalLight(0xfff5ea, 1.25);
+        dirLight.position.set(1.5, 2.5, 2.0);
+        astronautGroup.add(dirLight);
+
         if (typeof THREE.GLTFLoader === 'undefined') {
             console.warn('THREE.GLTFLoader is not available');
             return;
@@ -407,12 +415,14 @@ let createGlobe;
                 const model = gltf.scene || (gltf.scenes && gltf.scenes[0]);
                 if (!model) return;
 
-                // Center and normalize model bounds
+                // Normalize size: height calibrated to exactly 40% of the Moon's diameter
                 const box = new THREE.Box3().setFromObject(model);
-                const center = box.getCenter(new THREE.Vector3());
                 const size = box.getSize(new THREE.Vector3());
-                const maxDim = Math.max(size.x, size.y, size.z) || 1;
-                const normScale = 1.95 / maxDim;
+                const center = box.getCenter(new THREE.Vector3());
+                const height = size.y || 1;
+                const moonDiameter = targets.moonScale * 2; // 2.6 units
+                const targetHeight = moonDiameter * 0.40;   // 1.04 units
+                const normScale = targetHeight / height;
 
                 model.position.x = -center.x * normScale;
                 model.position.y = -center.y * normScale;
@@ -423,6 +433,8 @@ let createGlobe;
                     if (node.isMesh) {
                         node.castShadow = true;
                         node.receiveShadow = true;
+                        // Prevent astronaut mesh from intercepting raycasts or blocking planet clicks
+                        node.raycast = () => {};
                         if (node.material) {
                             node.material.roughness = 0.45;
                             node.material.metalness = 0.15;
@@ -433,23 +445,38 @@ let createGlobe;
                     }
                 });
 
-                // Add dedicated soft key-light that moves with the astronaut for cinematic suit illumination
-                const suitLight = new THREE.PointLight(0xfff5ea, 0.9, 5.0);
-                suitLight.position.set(0.6, 1.2, 1.8);
-                astronautGroup.add(suitLight);
-
-                const suitRimLight = new THREE.DirectionalLight(0x8fa4d8, 0.6);
-                suitRimLight.position.set(-1.0, 1.0, -1.0);
-                astronautGroup.add(suitRimLight);
-
                 astronautGroup.add(model);
                 console.log('Astronaut 3D model loaded and ready.');
             },
             undefined,
             err => {
-                console.error('Failed to load astronaut model:', err);
+                console.error(`Failed to load astronaut 3D model from path: ${ASTRONAUT_MODEL_PATH}`, err);
             }
         );
+    }
+
+    /**
+     * Update Astronaut target position (desktop: side, mobile: below)
+     */
+    function updateAstronautTarget(foreground) {
+        const isMobile = window.innerWidth < 768;
+        if (foreground === 'Moon') {
+            if (isMobile) {
+                targets.astronautPos.set(0.0, -1.05, 0.8);
+                targets.astronautRotY = 0.0;
+            } else {
+                targets.astronautPos.set(1.10, 0.0, 0.6);
+                targets.astronautRotY = -0.35;
+            }
+        } else {
+            if (isMobile) {
+                targets.astronautPos.set(0.0, -1.05, 0.8);
+                targets.astronautRotY = 0.0;
+            } else {
+                targets.astronautPos.set(-1.10, 0.0, 0.6);
+                targets.astronautRotY = 0.35;
+            }
+        }
     }
 
     /**
@@ -464,22 +491,15 @@ let createGlobe;
 
             targets.marsPos.set(1.6, 0.8, -2.0);
             targets.marsScale = 0.88;
-
-            // Astronaut floats to the right of Moon
-            targets.astronautPos.set(1.25, 0.1, 1.2);
-            targets.astronautRotY = -0.35;
         } else {
             targets.marsPos.set(0.7, -0.15, 0.5);
             targets.marsScale = 1.3;
 
             targets.moonPos.set(-1.6, 0.8, -2.0);
             targets.moonScale = 0.88;
-
-            // Astronaut floats to the other side (left of Mars)
-            targets.astronautPos.set(-1.25, 0.1, 1.2);
-            targets.astronautRotY = 0.35;
         }
 
+        updateAstronautTarget(newForeground);
         updateAstronautCaption();
     }
 
@@ -949,11 +969,15 @@ let createGlobe;
 
         // 5. Astronaut Zero-Gravity Floating & Dynamic Lerping
         if (astronautGroup) {
+            const isReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
             const time = Date.now() * 0.0016;
-            const floatY = Math.sin(time) * 0.07;
-            const floatZ = Math.cos(time * 0.7) * 0.04;
-            const tiltX = Math.sin(time * 0.5) * 0.06;
-            const tiltZ = Math.cos(time * 0.7) * 0.05;
+
+            // Tranquil floating sine oscillations - disabled if user prefers reduced motion
+            const floatY = isReducedMotion ? 0 : Math.sin(time) * 0.045;
+            const floatZ = isReducedMotion ? 0 : Math.cos(time * 0.7) * 0.025;
+            const tiltX  = isReducedMotion ? 0 : Math.sin(time * 0.5) * 0.035;
+            const tiltZ  = isReducedMotion ? 0 : Math.cos(time * 0.7) * 0.03;
+            const rotYOffset = isReducedMotion ? 0 : Math.sin(time * 0.5) * 0.04;
 
             const yScrollOffset = (viewMode === 'overview') ? (1 - planetEntrance) * -2.2 : 0;
             const targetX = targets.astronautPos.x;
@@ -964,7 +988,8 @@ let createGlobe;
             astronautGroup.position.y += (targetY - astronautGroup.position.y) * 0.055;
             astronautGroup.position.z += (targetZ - astronautGroup.position.z) * 0.055;
 
-            astronautGroup.rotation.y += (targets.astronautRotY - astronautGroup.rotation.y) * 0.055;
+            const targetRotY = targets.astronautRotY + rotYOffset;
+            astronautGroup.rotation.y += (targetRotY - astronautGroup.rotation.y) * 0.055;
             astronautGroup.rotation.x = tiltX;
             astronautGroup.rotation.z = tiltZ;
 
@@ -989,6 +1014,8 @@ let createGlobe;
         renderer.setSize(w, h, false);
         camera.aspect = w / h;
         camera.updateProjectionMatrix();
+
+        updateAstronautTarget(activeForeground);
     }
 
     /**
@@ -1218,8 +1245,9 @@ let createGlobe;
             elements.scrollPrompt.textContent = strings.scrollPrompt;
         }
 
-        if (window.Starfield && typeof window.Starfield.updateUI === 'function') {
-            window.Starfield.updateUI();
+        const a11yAstronaut = document.getElementById('astronaut-a11y');
+        if (a11yAstronaut) {
+            a11yAstronaut.setAttribute('aria-label', lang === 'ar' ? 'رائد فضاء ناسا يطفو في الفضاء بجانب الكوكب' : 'NASA astronaut floating in space beside the planet');
         }
 
         updateAstronautCaption();
@@ -1266,6 +1294,10 @@ let createGlobe;
     }
 
     function init() {
+        const bgVideo = document.getElementById('bg-video');
+        if (bgVideo) {
+            bgVideo.play().catch(() => {});
+        }
         setupEventListeners();
         initSpaceScene();
         setLanguage('ar');

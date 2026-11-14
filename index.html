@@ -26,10 +26,6 @@
     <!-- Top navigation bar -->
     <nav class="top-nav" aria-label="الشريط العلوي">
         <button id="btn-back-to-overview" class="back-nav-btn hidden" aria-label="العودة لنظرة الكواكب">← نظرة عامة على الكواكب</button>
-        <button id="motion-toggle" class="motion-btn" aria-label="إيقاف حركة الخلفية" title="إيقاف الحركة">
-            <span class="motion-icon" aria-hidden="true">⏸</span>
-            <span class="motion-text">إيقاف الحركة</span>
-        </button>
         <button id="lang-toggle" class="lang-btn" aria-label="تبديل اللغة">English</button>
     </nav>
 
@@ -39,6 +35,8 @@
         <div id="astronaut-caption" class="astronaut-caption moon-theme hidden-caption" aria-live="polite">
             <span id="astronaut-caption-text" class="caption-text">آثار خالدة على تربة فضية</span>
         </div>
+        <!-- Accessible description for 3D Astronaut Model -->
+        <div id="astronaut-a11y" role="img" aria-label="رائد فضاء ناسا يطفو في الفضاء بجانب الكوكب" class="sr-only"></div>
         <canvas id="space-canvas" tabindex="0" role="img"
             aria-label="عرض تفاعلي ثلاثي الأبعاد للقمر والمريخ. مرر الفأرة على القمر ليتوهج، انقر على المريخ لتبديل موضعه، أو انقر على الجرم للتكبير والاستكشاف."></canvas>
     </div>

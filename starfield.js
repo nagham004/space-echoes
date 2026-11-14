@@ -1,16 +1,16 @@
 /**
  * ============================================================================
- * Space Echoes - 3D Celestial Starfield Background (Three.js)
+ * Space Echoes - Scroll-Driven 3D Starfield Background (Three.js)
  * ============================================================================
- * - High-performance THREE.Points with BufferGeometry
- * - Multi-layered depth distribution (distant, mid, bright hero stars)
- * - Subtle astronomical tints (soft blue, warm pale gold, pure white)
- * - Ultra-smooth, tranquil cosmic rotation with gentle mouse/gyro parallax
- * - Respects prefers-reduced-motion and supports interactive pause/play
- * - Automatically pauses loop during visibilitychange (document.hidden)
- * - Zero runtime object allocations inside requestAnimationFrame
+ * - Moves strictly on page scroll: no auto-rotation, no mouse/gyro parallax.
+ * - Idle when not scrolling: render loop stops completely after smooth lerp.
+ * - SCROLL_SPEED constant at top for easy adjustment.
+ * - Respects prefers-reduced-motion: reduce (completely static when active).
  * ============================================================================
  */
+
+// 1. Easy-to-tune scroll sensitivity coefficient (radians per scroll pixel)
+const SCROLL_SPEED = 0.0004;
 
 (function () {
     'use strict';
@@ -18,17 +18,17 @@
     let scene, camera, renderer, starGroup;
     let animId = null;
     let isRunning = false;
-    let isMotionActive = true;
 
-    // Pre-allocated parallax coordinates to avoid allocations inside loop
-    let targetParallaxX = 0;
-    let targetParallaxY = 0;
-    let currentParallaxX = 0;
-    let currentParallaxY = 0;
+    // Accessibility check
+    const motionMedia = window.matchMedia('(prefers-reduced-motion: reduce)');
+    let isReducedMotion = motionMedia.matches;
+
+    // Smooth scroll interpolation values
+    let targetY = 0;
+    let currentY = 0;
 
     /**
-     * Generate a soft circular star particle texture using offscreen canvas.
-     * Prevents blocky/square particles and creates soft celestial pinpricks.
+     * Circular soft star texture using offscreen canvas (prevents square particle boxes)
      */
     function createStarTexture() {
         const size = 32;
@@ -63,26 +63,19 @@
         const isMobile = window.innerWidth < 768;
         const totalStars = isMobile ? 1500 : 3000;
 
-        // 3 Balanced depth layers:
-        // 1. Distant dim stars (60%)
-        // 2. Mid-range ambient stars (30%)
-        // 3. Bright hero celestial stars (10%)
+        // 3 depth layers: distant dim, mid, bright (pixel-accurate sizes with sizeAttenuation: false)
         const layers = [
-            { count: Math.round(totalStars * 0.60), size: isMobile ? 1.4 : 1.7, opacity: 0.72, minR: 600, maxR: 1200 },
-            { count: Math.round(totalStars * 0.30), size: isMobile ? 2.2 : 2.7, opacity: 0.88, minR: 450, maxR: 900 },
-            { count: Math.round(totalStars * 0.10), size: isMobile ? 3.4 : 4.0, opacity: 0.98, minR: 350, maxR: 750 }
+            { count: Math.round(totalStars * 0.60), size: isMobile ? 1.4 : 1.6, opacity: 0.75, minR: 600, maxR: 1200 },
+            { count: Math.round(totalStars * 0.30), size: isMobile ? 2.2 : 2.6, opacity: 0.90, minR: 450, maxR: 900 },
+            { count: Math.round(totalStars * 0.10), size: isMobile ? 3.4 : 4.2, opacity: 1.00, minR: 350, maxR: 750 }
         ];
 
-        // Color palette weights:
-        // 65% Soft icy blue-white
-        // 25% Warm pale stellar yellow
-        // 10% Pure crisp white
         const colorPalette = [
             { r: 0.88, g: 0.93, b: 1.00 }, // Soft blue
             { r: 0.88, g: 0.93, b: 1.00 },
             { r: 0.88, g: 0.93, b: 1.00 },
             { r: 1.00, g: 0.95, b: 0.88 }, // Pale gold
-            { r: 1.00, g: 1.00, b: 1.00 }  // Pure white
+            { r: 1.00, g: 1.00, b: 1.00 }  // White
         ];
 
         layers.forEach(layer => {
@@ -92,8 +85,6 @@
 
             for (let i = 0; i < layer.count; i++) {
                 const i3 = i * 3;
-
-                // Spherical uniform distribution around the observer
                 const theta = Math.random() * Math.PI * 2;
                 const phi = Math.acos(2 * Math.random() - 1);
                 const radius = layer.minR + Math.random() * (layer.maxR - layer.minR);
@@ -103,7 +94,6 @@
                 positions[i3 + 2] = radius * Math.cos(phi);
 
                 const c = colorPalette[Math.floor(Math.random() * colorPalette.length)];
-                // Slight natural brightness variation per star
                 const lum = 0.85 + Math.random() * 0.15;
                 colors[i3]     = c.r * lum;
                 colors[i3 + 1] = c.g * lum;
@@ -115,7 +105,7 @@
 
             const material = new THREE.PointsMaterial({
                 size: layer.size,
-                sizeAttenuation: true,
+                sizeAttenuation: false,
                 map: starTexture,
                 transparent: true,
                 opacity: layer.opacity,
@@ -124,41 +114,55 @@
                 depthWrite: false
             });
 
-            const points = new THREE.Points(geometry, material);
-            starGroup.add(points);
+            starGroup.add(new THREE.Points(geometry, material));
         });
 
         scene.add(starGroup);
     }
 
     /**
-     * Animation Loop - zero allocations inside loop
+     * Render a single frame
+     */
+    function renderFrame() {
+        if (!renderer || !scene || !camera) return;
+        renderer.render(scene, camera);
+    }
+
+    /**
+     * Animation Loop - active only while smoothing scroll movement
      */
     function renderLoop() {
         if (!isRunning) return;
-        animId = requestAnimationFrame(renderLoop);
 
-        if (isMotionActive) {
-            // Very calm, gentle rotation
-            starGroup.rotation.y += 0.00012;
-            starGroup.rotation.x += 0.00004;
+        if (!isReducedMotion) {
+            const diff = targetY - currentY;
 
-            // Gentle parallax damping
-            currentParallaxX += (targetParallaxX - currentParallaxX) * 0.04;
-            currentParallaxY += (targetParallaxY - currentParallaxY) * 0.04;
-
-            camera.position.x = currentParallaxX * 18;
-            camera.position.y = -currentParallaxY * 18;
-            camera.lookAt(0, 0, 0);
+            // If the difference is still noticeable, keep smoothing
+            if (Math.abs(diff) > 0.00001) {
+                currentY += diff * 0.08;
+                starGroup.rotation.y = currentY;
+                renderFrame();
+                animId = requestAnimationFrame(renderLoop);
+            } else {
+                // Smoothing finished: snap to target, render once, and stop loop
+                currentY = targetY;
+                starGroup.rotation.y = currentY;
+                renderFrame();
+                isRunning = false;
+                animId = null;
+            }
+        } else {
+            // Reduced motion active: static render once and stop
+            renderFrame();
+            isRunning = false;
+            animId = null;
         }
-
-        renderer.render(scene, camera);
     }
 
     function startLoop() {
         if (isRunning) return;
         isRunning = true;
-        renderLoop();
+        animId = requestAnimationFrame(renderLoop);
     }
 
     function stopLoop() {
@@ -167,6 +171,16 @@
             cancelAnimationFrame(animId);
             animId = null;
         }
+    }
+
+    /**
+     * Scroll event handler - updates target rotation based on scroll position
+     */
+    function onScroll() {
+        if (isReducedMotion || !starGroup) return;
+        const scrollY = window.scrollY || window.pageYOffset || 0;
+        targetY = scrollY * SCROLL_SPEED;
+        startLoop();
     }
 
     /**
@@ -182,62 +196,7 @@
         camera.aspect = w / h;
         camera.updateProjectionMatrix();
 
-        if (!isMotionActive) {
-            renderer.render(scene, camera);
-        }
-    }
-
-    /**
-     * Motion Toggle Functionality (Accessible & respects user preference)
-     */
-    function setMotion(enabled) {
-        isMotionActive = !!enabled;
-
-        if (!isMotionActive) {
-            targetParallaxX = 0;
-            targetParallaxY = 0;
-            currentParallaxX = 0;
-            currentParallaxY = 0;
-            if (camera) {
-                camera.position.set(0, 0, 0);
-                camera.lookAt(0, 0, 0);
-            }
-            if (renderer && scene && camera) {
-                renderer.render(scene, camera);
-            }
-        }
-
-        updateMotionButtonUI();
-    }
-
-    function toggleMotion() {
-        setMotion(!isMotionActive);
-    }
-
-    function updateMotionButtonUI() {
-        const btn = document.getElementById('motion-toggle');
-        if (!btn) return;
-
-        const isArabic = document.documentElement.lang !== 'en';
-        const labelPlay = isArabic ? 'تشغيل الحركة' : 'Play Motion';
-        const labelPause = isArabic ? 'إيقاف الحركة' : 'Pause Motion';
-
-        const textSpan = btn.querySelector('.motion-text');
-        const iconSpan = btn.querySelector('.motion-icon');
-
-        if (isMotionActive) {
-            btn.setAttribute('aria-label', labelPause);
-            btn.setAttribute('title', labelPause);
-            if (textSpan) textSpan.textContent = labelPause;
-            if (iconSpan) iconSpan.textContent = '⏸';
-            btn.classList.remove('is-paused');
-        } else {
-            btn.setAttribute('aria-label', labelPlay);
-            btn.setAttribute('title', labelPlay);
-            if (textSpan) textSpan.textContent = labelPlay;
-            if (iconSpan) iconSpan.textContent = '▶';
-            btn.classList.add('is-paused');
-        }
+        renderFrame();
     }
 
     /**
@@ -245,7 +204,6 @@
      */
     function initStarfield() {
         if (typeof THREE === 'undefined') {
-            console.warn('Three.js is not loaded. Starfield initialization deferred.');
             setTimeout(initStarfield, 100);
             return;
         }
@@ -258,12 +216,10 @@
             document.body.prepend(canvas);
         }
 
-        // Dedicated scene and camera
         scene = new THREE.Scene();
         camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 1, 2000);
         camera.position.set(0, 0, 0);
 
-        // Low-power, performant WebGL renderer with deep dark clear color (#05060a)
         renderer = new THREE.WebGLRenderer({
             canvas: canvas,
             antialias: false,
@@ -275,64 +231,47 @@
         renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
         renderer.setSize(window.innerWidth, window.innerHeight, false);
 
-        // Generate circular star texture and build star layers
         const starTexture = createStarTexture();
         buildStarLayers(starTexture);
 
-        // Check user motion preferences (prefers-reduced-motion)
-        const motionMedia = window.matchMedia('(prefers-reduced-motion: reduce)');
-        if (motionMedia.matches) {
-            isMotionActive = false;
-        }
+        // Listen for changes in accessibility preferences
         motionMedia.addEventListener('change', e => {
-            setMotion(!e.matches);
+            isReducedMotion = e.matches;
+            if (isReducedMotion) {
+                stopLoop();
+                currentY = 0;
+                if (starGroup) starGroup.rotation.y = 0;
+                renderFrame();
+            }
         });
 
-        // Pointer Parallax (Passive listeners)
-        window.addEventListener('pointermove', e => {
-            if (!isMotionActive) return;
-            targetParallaxX = (e.clientX / window.innerWidth - 0.5) * 0.18;
-            targetParallaxY = (e.clientY / window.innerHeight - 0.5) * 0.18;
-        }, { passive: true });
+        // Scroll listener: passive for high performance
+        window.addEventListener('scroll', onScroll, { passive: true });
 
-        // Mobile Gyroscope Parallax (DeviceOrientation)
-        if (window.DeviceOrientationEvent) {
-            window.addEventListener('deviceorientation', e => {
-                if (!isMotionActive || e.gamma === null || e.beta === null) return;
-                targetParallaxX = (Math.max(-45, Math.min(45, e.gamma)) / 45) * 0.18;
-                targetParallaxY = (Math.max(-45, Math.min(45, e.beta - 45)) / 45) * 0.18;
-            }, { passive: true });
+        // Initial scroll position alignment
+        const initialScrollY = window.scrollY || window.pageYOffset || 0;
+        targetY = initialScrollY * SCROLL_SPEED;
+        currentY = targetY;
+        if (starGroup && !isReducedMotion) {
+            starGroup.rotation.y = currentY;
         }
 
-        // Performance: Pause RAF when page is inactive or tab switched
+        // Performance: Stop RAF loop when page is hidden
         document.addEventListener('visibilitychange', () => {
             if (document.hidden) {
                 stopLoop();
-            } else {
+            } else if (!isReducedMotion && Math.abs(targetY - currentY) > 0.00001) {
                 startLoop();
+            } else {
+                renderFrame();
             }
         });
 
         window.addEventListener('resize', onResize, { passive: true });
 
-        // Wire motion toggle button
-        const motionBtn = document.getElementById('motion-toggle');
-        if (motionBtn) {
-            motionBtn.addEventListener('click', toggleMotion);
-            updateMotionButtonUI();
-        }
-
-        // Initial render and start loop
-        startLoop();
+        // Render initial static frame (no automatic motion on load)
+        renderFrame();
     }
-
-    // Expose global controller for language synchronization or testing
-    window.Starfield = {
-        toggleMotion: toggleMotion,
-        setMotion: setMotion,
-        isMotionActive: function () { return isMotionActive; },
-        updateUI: updateMotionButtonUI
-    };
 
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', initStarfield);
