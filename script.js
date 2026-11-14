@@ -2752,14 +2752,14 @@ const MODEL_CONFIGS = {
         });
 
         const creditsItems = isAr ? [
-            { text: "Moon map: NASA's Scientific Visualization Studio, CGI Moon Kit" },
-            { text: 'Mars map: NASA / JPL / USGS, Viking MDIM 2.1' },
+            { text: 'خريطة سطح القمر: Solar System Scope Textures (CC BY 4.0)', url: 'https://www.solarsystemscope.com/textures/' },
+            { text: 'خريطة سطح المريخ: Solar System Scope Textures (CC BY 4.0)', url: 'https://www.solarsystemscope.com/textures/' },
             { text: '3D models: NASA 3D Resources (NASA/JPL-Caltech)' },
             { text: 'مجسم LRV: توليد ثلاثي الأبعاد بالذكاء الاصطناعي استناداً إلى صورة مرجعية للعربة القمرية (AI-generated 3D visualization based on the provided Lunar Rover reference image).' },
             { text: 'مجسم رائد الفضاء: NASA 3D Resources — بدلة الفضاء Z-2', url: 'https://science.nasa.gov/3d-resources/z2-spacesuit/' }
         ] : [
-            { text: "Moon map: NASA's Scientific Visualization Studio, CGI Moon Kit" },
-            { text: 'Mars map: NASA / JPL / USGS, Viking MDIM 2.1' },
+            { text: 'Moon surface texture: Solar System Scope Textures (CC BY 4.0)', url: 'https://www.solarsystemscope.com/textures/' },
+            { text: 'Mars surface texture: Solar System Scope Textures (CC BY 4.0)', url: 'https://www.solarsystemscope.com/textures/' },
             { text: '3D models: NASA 3D Resources (NASA/JPL-Caltech)' },
             { text: 'LRV model: AI-generated 3D visualization based on the provided Lunar Rover reference image.' },
             { text: 'Astronaut model: NASA 3D Resources — Z-2 Spacesuit', url: 'https://science.nasa.gov/3d-resources/z2-spacesuit/' }
