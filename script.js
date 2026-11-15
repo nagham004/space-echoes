@@ -1002,6 +1002,7 @@ const MODEL_CONFIGS = {
             elements.btnBackToOverview.classList.remove('hidden');
         }
         document.body.style.overflow = 'hidden';
+        elements.spaceCanvas.classList.add('explore-mode');
 
         const strings = uiText[currentLang];
         elements.spaceCanvas.setAttribute('aria-label', body === 'Moon' ? strings.moonSphereAria : strings.marsSphereAria);
@@ -1024,6 +1025,7 @@ const MODEL_CONFIGS = {
         moonMarkersGroup.visible = false;
         marsMarkersGroup.visible = false;
         document.body.style.overflow = '';
+        elements.spaceCanvas.classList.remove('explore-mode');
 
         swapForeground(activeForeground);
         targets.cameraPos.set(0, 0, getOverviewCameraZ());
@@ -1098,8 +1100,8 @@ const MODEL_CONFIGS = {
             isDragging = true;
             startPointerPos = { x: e.clientX, y: e.clientY };
             lastPointerPos = { x: e.clientX, y: e.clientY };
-            canvas.setPointerCapture(e.pointerId);
             if (viewMode === 'explore') {
+                canvas.setPointerCapture(e.pointerId);
                 canvas.style.cursor = 'grabbing';
             }
         });

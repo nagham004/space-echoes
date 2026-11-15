@@ -145,8 +145,12 @@ body.space-app {
     width: 100%;
     height: 100%;
     display: block;
-    touch-action: none;
+    touch-action: pan-y;
     cursor: grab;
+}
+
+#space-canvas.explore-mode {
+    touch-action: none;
 }
 
 #space-canvas:focus-visible {
