@@ -845,6 +845,16 @@ const MODEL_CONFIGS = {
                 });
 
                 astronautGroup.add(model);
+                if (viewMode === 'overview' && planetEntrance > 0.05) {
+                    const initScale = planetEntrance * targets.astronautScale * (1 - footerOverlap * 0.42);
+                    astronautGroup.position.set(
+                        targets.astronautPos.x,
+                        targets.astronautPos.y + (1 - planetEntrance) * -2.2 + footerOverlap * 1.15,
+                        targets.astronautPos.z
+                    );
+                    astronautGroup.scale.set(initScale, initScale, initScale);
+                    astronautGroup.visible = initScale > 0.01;
+                }
             },
             undefined,
             err => {
@@ -1095,12 +1105,15 @@ const MODEL_CONFIGS = {
             lastClientY = e.clientY;
         };
 
+        let startScrollY = 0;
+
         canvas.addEventListener('pointerdown', e => {
             updateMouseFromPointer(e);
-            isDragging = true;
             startPointerPos = { x: e.clientX, y: e.clientY };
             lastPointerPos = { x: e.clientX, y: e.clientY };
+            startScrollY = window.scrollY || window.pageYOffset || 0;
             if (viewMode === 'explore') {
+                isDragging = true;
                 canvas.setPointerCapture(e.pointerId);
                 canvas.style.cursor = 'grabbing';
             }
@@ -1131,12 +1144,13 @@ const MODEL_CONFIGS = {
             if (isDragging) {
                 isDragging = false;
                 canvas.style.cursor = 'grab';
+            }
 
-                const dist = Math.hypot(e.clientX - startPointerPos.x, e.clientY - startPointerPos.y);
-                const tapLimit = e.pointerType === 'touch' ? 14 : 6;
-                if (dist < tapLimit) {
-                    handlePointerClick(e.pointerType === 'touch');
-                }
+            const dist = Math.hypot(e.clientX - startPointerPos.x, e.clientY - startPointerPos.y);
+            const scrollDelta = Math.abs((window.scrollY || window.pageYOffset || 0) - startScrollY);
+            const tapLimit = e.pointerType === 'touch' ? 14 : 6;
+            if (dist < tapLimit && scrollDelta < 6) {
+                handlePointerClick(e.pointerType === 'touch');
             }
         });
 
@@ -1563,18 +1577,18 @@ const MODEL_CONFIGS = {
             const targetY = targets.astronautPos.y + floatY + yScrollOffset;
             const targetZ = targets.astronautPos.z + floatZ;
 
-            astronautGroup.position.x += (targetX - astronautGroup.position.x) * 0.055;
-            astronautGroup.position.y += (targetY - astronautGroup.position.y) * 0.055;
-            astronautGroup.position.z += (targetZ - astronautGroup.position.z) * 0.055;
+            astronautGroup.position.x += (targetX - astronautGroup.position.x) * 0.12;
+            astronautGroup.position.y += (targetY - astronautGroup.position.y) * 0.12;
+            astronautGroup.position.z += (targetZ - astronautGroup.position.z) * 0.12;
 
             const targetRotY = targets.astronautRotY + rotYOffset;
-            astronautGroup.rotation.y += (targetRotY - astronautGroup.rotation.y) * 0.055;
+            astronautGroup.rotation.y += (targetRotY - astronautGroup.rotation.y) * 0.10;
             astronautGroup.rotation.x = tiltX;
             astronautGroup.rotation.z = tiltZ;
 
             const footerAstroScale = (viewMode === 'overview') ? (1 - footerOverlap * 0.42) : 1;
             const targetScale = (viewMode === 'overview' ? planetEntrance : 0.0) * targets.astronautScale * footerAstroScale;
-            const curScale = astronautGroup.scale.x + (targetScale - astronautGroup.scale.x) * 0.08;
+            const curScale = astronautGroup.scale.x + (targetScale - astronautGroup.scale.x) * 0.14;
             astronautGroup.scale.set(curScale, curScale, curScale);
             astronautGroup.visible = curScale > 0.01;
         }
