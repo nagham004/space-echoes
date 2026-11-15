@@ -1017,6 +1017,30 @@ html[lang="en"] .hero-title-content h1 {
     text-shadow: none;
 }
 
+.story-prev-btn {
+    font-size: max(16px, 0.8em);
+    padding: 0.55em 1.4em;
+    border-radius: 30px;
+    background: rgba(20, 28, 60, 0.72);
+    color: #eef5ff;
+    border: 1px solid rgba(168, 172, 224, 0.55);
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+}
+
+.story-prev-btn:hover,
+.story-prev-btn:focus-visible {
+    background: rgba(36, 50, 99, 0.92);
+    border-color: var(--accent-cyan);
+    outline: 3px solid var(--focus-ring);
+    outline-offset: 2px;
+}
+
+.story-prev-btn[hidden] {
+    display: none;
+}
+
 .story-subcount {
     display: inline-block;
     margin-inline-start: 0.45em;

@@ -219,6 +219,7 @@ const MODEL_CONFIGS = {
         storyLive: document.getElementById('story-live'),
         storyTitle: document.getElementById('story-title'),
         storyScrim: document.getElementById('story-scrim'),
+        btnStoryPrev: document.getElementById('btn-story-prev'),
         btnStoryNext: document.getElementById('btn-story-next'),
         btnVoiceToggle: document.getElementById('btn-voice-toggle'),
         quizContainer: document.getElementById('quiz-container'),
@@ -1681,7 +1682,11 @@ const MODEL_CONFIGS = {
     function storyLabels() {
         const strings = uiText[currentLang];
         const fallback = STORY_UI_TEXT[currentLang];
-        return { next: strings.next || fallback.next, done: strings.finishStory || fallback.done };
+        return {
+            prev: currentLang === 'ar' ? 'السابق' : 'Back',
+            next: strings.next || fallback.next,
+            done: strings.finishStory || fallback.done
+        };
     }
 
     function initShowScene() {
@@ -2293,6 +2298,12 @@ const MODEL_CONFIGS = {
         body.style.fontSize = page.scale < 1 ? `${page.scale}em` : '';
         root.querySelector('.story-progress-text').textContent = `${index + 1} / ${total}`;
         root.querySelector('.story-progress-fill').style.width = `${((index + 1) / total) * 100}%`;
+        const prevBtn = root.querySelector('.story-prev-btn');
+        if (prevBtn) {
+            prevBtn.textContent = labels.prev;
+            prevBtn.hidden = index === 0;
+            prevBtn.disabled = index === 0;
+        }
         root.querySelector('.story-next-btn').textContent = index === total - 1 ? labels.done : labels.next;
     }
 
@@ -2650,6 +2661,14 @@ const MODEL_CONFIGS = {
             elements.storyTitle.focus({ preventScroll: true });
             storyBusy = false;
         }, STORY_FADE_MS);
+    }
+
+    function handleStoryPrev() {
+        if (showStage !== 'story' || storyBusy) return;
+        if (storyPageIndex > 0) {
+            stopTypeWriter();
+            goToStoryPage(storyPageIndex - 1);
+        }
     }
 
     function handleStoryNext() {
@@ -3151,6 +3170,9 @@ const MODEL_CONFIGS = {
 
         // Story Drawer controls
         elements.btnDiscoverStory.addEventListener('click', startStory);
+        if (elements.btnStoryPrev) {
+            elements.btnStoryPrev.addEventListener('click', handleStoryPrev);
+        }
         elements.btnStoryNext.addEventListener('click', handleStoryNext);
         if (elements.btnVoiceToggle) {
             updateVoiceToggleUI();
