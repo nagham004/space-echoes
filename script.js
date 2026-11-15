@@ -157,8 +157,8 @@ const MODEL_CONFIGS = {
     const MOON_TEX_PATH = 'assets/images/Moon/moon-photo.jpg';
     const MARS_TEX_PATH = 'assets/images/Mars/mars-photo.jpg';
     const ASTRONAUT_MODEL_PATH = 'assets/models/astronaut.glb';
-    const VEHICLE_SOUND_PATH = 'assets/audios/vehicles-sound.m4a';
-    const BUTTON_SOUND_PATH = 'assets/audios/buttons-sound.m4a';
+    const VEHICLE_SOUND_PATH = 'assets/audios/sound-vehicle.m4a';
+    const BUTTON_SOUND_PATH = 'assets/audios/press-button.m4a';
 
     const vehicleIntroAudio = new Audio(VEHICLE_SOUND_PATH);
     vehicleIntroAudio.loop = true;
