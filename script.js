@@ -2851,10 +2851,8 @@ const MODEL_CONFIGS = {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
 
-            // Seamlessly cover baked-in title & placeholder labels with adjacent starry background
-            ctx.drawImage(img, 240, 30, 526, 74, 240, 112, 526, 74);
-            ctx.drawImage(img, 240, 30, 526, 74, 240, 186, 526, 76);
-
+            // Seamlessly cover baked-in placeholder labels with adjacent starry background
+            ctx.drawImage(img, 112, 322, 804, 52, 112, 372, 804, 52); // [ the name of participant]
             const patchAreas = [
                 { x: 196, w: 124 }, // [DATE]
                 { x: 438, w: 162 }, // [CERTIFICATE ID]
@@ -2864,19 +2862,6 @@ const MODEL_CONFIGS = {
                 ctx.drawImage(img, area.x, 626, area.w, 24, area.x, 600, area.w, 24);
             });
 
-            // Draw new certificate title: SPACE EXPLORER CERTIFICATE
-            ctx.save();
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            ctx.fillStyle = '#ffffff';
-            ctx.shadowColor = 'rgba(0, 0, 0, 0.85)';
-            ctx.shadowBlur = 10;
-            ctx.font = '700 40px "IBM Plex Sans Arabic", Arial, sans-serif';
-            ctx.fillText('SPACE EXPLORER', canvas.width / 2, 165);
-            ctx.font = '700 50px "IBM Plex Sans Arabic", Arial, sans-serif';
-            ctx.fillText('CERTIFICATE', canvas.width / 2, 224);
-            ctx.restore();
-
             // Draw the participant's name centered on the certificate
             ctx.save();
             ctx.textAlign = 'center';
@@ -2885,7 +2870,7 @@ const MODEL_CONFIGS = {
             ctx.fillStyle = '#ffcb6b';
             ctx.shadowColor = 'rgba(0, 0, 0, 0.85)';
             ctx.shadowBlur = 12;
-            ctx.fillText(userName, canvas.width / 2, canvas.height * 0.545);
+            ctx.fillText(userName, canvas.width / 2, 398);
             ctx.restore();
 
             // Draw today's date, random Certificate ID, and Coordinator
