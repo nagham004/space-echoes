@@ -157,6 +157,40 @@ const MODEL_CONFIGS = {
     const MOON_TEX_PATH = 'assets/images/Moon/moon-photo.jpg';
     const MARS_TEX_PATH = 'assets/images/Mars/mars-photo.jpg';
     const ASTRONAUT_MODEL_PATH = 'assets/models/astronaut.glb';
+    const VEHICLE_SOUND_PATH = 'assets/audios/vehicles-sound.m4a';
+    const BUTTON_SOUND_PATH = 'assets/audios/buttons-sound.m4a';
+
+    const vehicleIntroAudio = new Audio(VEHICLE_SOUND_PATH);
+    vehicleIntroAudio.loop = true;
+    vehicleIntroAudio.volume = 0.55;
+    vehicleIntroAudio.preload = 'auto';
+
+    const buttonClickAudio = new Audio(BUTTON_SOUND_PATH);
+    buttonClickAudio.volume = 0.6;
+    buttonClickAudio.preload = 'auto';
+
+    function playButtonSound() {
+        try {
+            buttonClickAudio.currentTime = 0;
+            const p = buttonClickAudio.play();
+            if (p && typeof p.catch === 'function') p.catch(() => {});
+        } catch (_) {}
+    }
+
+    function playVehicleSound() {
+        try {
+            vehicleIntroAudio.currentTime = 0;
+            const p = vehicleIntroAudio.play();
+            if (p && typeof p.catch === 'function') p.catch(() => {});
+        } catch (_) {}
+    }
+
+    function stopVehicleSound() {
+        try {
+            vehicleIntroAudio.pause();
+            vehicleIntroAudio.currentTime = 0;
+        } catch (_) {}
+    }
 
     // DOM Elements
     const elements = {
@@ -213,9 +247,6 @@ const MODEL_CONFIGS = {
         heroTeamLogo: document.getElementById('hero-team-logo'),
         heroLogoSpacer: document.querySelector('.hero-logo-spacer'),
         stageAttribution: document.getElementById('stage-attribution'),
-        btnMobileSources: document.getElementById('btn-mobile-sources'),
-        mobileSourcesPopover: document.getElementById('mobile-sources-popover'),
-        mobileSourcesDisclaimer: document.getElementById('mobile-sources-disclaimer'),
         astronautCaption: document.getElementById('astronaut-caption'),
         astronautCaptionText: document.getElementById('astronaut-caption-text'),
         markerTooltip: document.getElementById('marker-tooltip'),
@@ -247,13 +278,6 @@ const MODEL_CONFIGS = {
         if (elements.stageAttribution) {
             elements.stageAttribution.classList.toggle('hidden', !showOnStage);
         }
-        if (elements.btnMobileSources) {
-            elements.btnMobileSources.classList.toggle('hidden', !showOnStage);
-        }
-        if (!showOnStage && elements.mobileSourcesPopover) {
-            elements.mobileSourcesPopover.classList.add('hidden');
-            if (elements.btnMobileSources) elements.btnMobileSources.setAttribute('aria-expanded', 'false');
-        }
         updateTeamLogoTransform();
     }
 
@@ -280,9 +304,9 @@ const MODEL_CONFIGS = {
         const startX = vw / 2;
         let startY = Math.max(28, vh * 0.09) + h / 2;
         if (elements.heroTitleContent) {
-            const contentHeight = elements.heroTitleContent.offsetHeight;
-            const contentTop = Math.max(16, (vh - contentHeight) / 2);
-            startY = contentTop + 20 + h / 2;
+            const padTop = parseFloat(getComputedStyle(elements.heroTitleContent).paddingTop) || 16;
+            const spacerTop = elements.heroTitleContent.offsetTop + padTop;
+            startY = spacerTop + h / 2;
         }
         const startScale = 1;
 
@@ -412,7 +436,8 @@ const MODEL_CONFIGS = {
 
         scene = new THREE.Scene();
         camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.01, 100);
-        camera.position.set(0, 0, 4.4);
+        swapForeground(activeForeground);
+        camera.position.copy(targets.cameraPos);
         scene.add(camera);
 
         // Constant, balanced planetary lighting across both overview and explore modes
@@ -828,27 +853,39 @@ const MODEL_CONFIGS = {
         );
     }
 
+    function isPortraitMobile() {
+        return window.innerWidth < 768 || (window.innerWidth / Math.max(1, window.innerHeight)) < 0.82;
+    }
+
+    function getOverviewCameraZ() {
+        if (!isPortraitMobile()) return 4.4;
+        const aspect = Math.max(0.42, window.innerWidth / Math.max(1, window.innerHeight));
+        return Math.min(7.2, Math.max(5.0, 2.7 / aspect));
+    }
+
+    function getExploreCameraZ() {
+        if (!isPortraitMobile()) return 3.2;
+        const aspect = Math.max(0.42, window.innerWidth / Math.max(1, window.innerHeight));
+        return Math.min(8.0, Math.max(3.6, 3.35 / aspect));
+    }
+
     /**
      * Update Astronaut target position (desktop: side, mobile: below)
      */
     function updateAstronautTarget(foreground) {
-        const isMobile = window.innerWidth < 768;
-        if (foreground === 'Moon') {
-            if (isMobile) {
-                targets.astronautPos.set(0.0, -1.05, 0.8);
-                targets.astronautRotY = 0.0;
-            } else {
-                targets.astronautPos.set(1.10, 0.0, 0.6);
-                targets.astronautRotY = -0.35;
-            }
+        const isMobile = isPortraitMobile();
+        if (isMobile) {
+            targets.astronautPos.set(0.0, -1.05, 0.55);
+            targets.astronautScale = 0.82;
+            targets.astronautRotY = 0.0;
+        } else if (foreground === 'Moon') {
+            targets.astronautPos.set(1.10, 0.0, 0.6);
+            targets.astronautScale = 1.0;
+            targets.astronautRotY = -0.35;
         } else {
-            if (isMobile) {
-                targets.astronautPos.set(0.0, -1.05, 0.8);
-                targets.astronautRotY = 0.0;
-            } else {
-                targets.astronautPos.set(-1.10, 0.0, 0.6);
-                targets.astronautRotY = 0.35;
-            }
+            targets.astronautPos.set(-1.10, 0.0, 0.6);
+            targets.astronautScale = 1.0;
+            targets.astronautRotY = 0.35;
         }
     }
 
@@ -857,8 +894,23 @@ const MODEL_CONFIGS = {
      */
     function swapForeground(newForeground) {
         activeForeground = newForeground;
+        const isMobile = isPortraitMobile();
 
-        if (newForeground === 'Moon') {
+        if (isMobile) {
+            if (newForeground === 'Moon') {
+                targets.moonPos.set(-0.18, 0.36, 0.25);
+                targets.moonScale = 0.82;
+
+                targets.marsPos.set(0.62, 1.48, -1.5);
+                targets.marsScale = 0.60;
+            } else {
+                targets.marsPos.set(0.18, 0.36, 0.25);
+                targets.marsScale = 0.82;
+
+                targets.moonPos.set(-0.62, 1.48, -1.5);
+                targets.moonScale = 0.60;
+            }
+        } else if (newForeground === 'Moon') {
             targets.moonPos.set(-0.7, -0.15, 0.5);
             targets.moonScale = 1.3;
 
@@ -870,6 +922,10 @@ const MODEL_CONFIGS = {
 
             targets.moonPos.set(-1.6, 0.8, -2.0);
             targets.moonScale = 0.88;
+        }
+
+        if (viewMode === 'overview') {
+            targets.cameraPos.set(0, 0, getOverviewCameraZ());
         }
 
         updateAstronautTarget(newForeground);
@@ -928,7 +984,8 @@ const MODEL_CONFIGS = {
             moonMarkersGroup.visible = false;
         }
 
-        targets.cameraPos.set(0, 0, 3.2);
+        targets.cameraPos.set(0, 0, getExploreCameraZ());
+        hoveredPlanet = null;
         targets.moonGlow = 0.0;
         targets.marsGlow = 0.0;
         if (moonGlowMesh) moonGlowMesh.visible = false; // no halo around the planet while exploring
@@ -969,7 +1026,7 @@ const MODEL_CONFIGS = {
         document.body.style.overflow = '';
 
         swapForeground(activeForeground);
-        targets.cameraPos.set(0, 0, 4.4);
+        targets.cameraPos.set(0, 0, getOverviewCameraZ());
 
         if (elements.heroTitleSection) {
             elements.heroTitleSection.style.display = '';
@@ -1028,7 +1085,16 @@ const MODEL_CONFIGS = {
     function setupControls() {
         const canvas = elements.spaceCanvas;
 
+        const updateMouseFromPointer = e => {
+            const rect = canvas.getBoundingClientRect();
+            mouseVector.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+            mouseVector.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+            lastClientX = e.clientX;
+            lastClientY = e.clientY;
+        };
+
         canvas.addEventListener('pointerdown', e => {
+            updateMouseFromPointer(e);
             isDragging = true;
             startPointerPos = { x: e.clientX, y: e.clientY };
             lastPointerPos = { x: e.clientX, y: e.clientY };
@@ -1039,11 +1105,7 @@ const MODEL_CONFIGS = {
         });
 
         canvas.addEventListener('pointermove', e => {
-            const rect = canvas.getBoundingClientRect();
-            mouseVector.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
-            mouseVector.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
-            lastClientX = e.clientX;
-            lastClientY = e.clientY;
+            updateMouseFromPointer(e);
 
             if (isDragging) {
                 const deltaX = e.clientX - lastPointerPos.x;
@@ -1057,19 +1119,21 @@ const MODEL_CONFIGS = {
                 }
 
                 lastPointerPos = { x: e.clientX, y: e.clientY };
-            } else {
+            } else if (e.pointerType !== 'touch') {
                 handlePointerHover();
             }
         });
 
         canvas.addEventListener('pointerup', e => {
+            updateMouseFromPointer(e);
             if (isDragging) {
                 isDragging = false;
                 canvas.style.cursor = 'grab';
 
                 const dist = Math.hypot(e.clientX - startPointerPos.x, e.clientY - startPointerPos.y);
-                if (dist < 6) {
-                    handlePointerClick();
+                const tapLimit = e.pointerType === 'touch' ? 14 : 6;
+                if (dist < tapLimit) {
+                    handlePointerClick(e.pointerType === 'touch');
                 }
             }
         });
@@ -1079,7 +1143,8 @@ const MODEL_CONFIGS = {
             canvas.style.cursor = 'grab';
         });
 
-        canvas.addEventListener('pointerleave', () => {
+        canvas.addEventListener('pointerleave', e => {
+            if (e.pointerType === 'touch') return;
             if (viewMode === 'overview') {
                 targets.moonGlow = 0.0;
                 targets.marsGlow = 0.0;
@@ -1245,10 +1310,41 @@ const MODEL_CONFIGS = {
         }
     }
 
+    function findNearestScreenMarker(meshes, maxRadiusPx) {
+        const activeGroup = currentBody === 'Moon' ? moonGroup : marsGroup;
+        if (!activeGroup || !camera || !meshes.length) return null;
+
+        const rect = elements.spaceCanvas.getBoundingClientRect();
+        const planetPos = new THREE.Vector3();
+        activeGroup.getWorldPosition(planetPos);
+        const toCam = new THREE.Vector3().subVectors(camera.position, planetPos).normalize();
+
+        let best = null;
+        let bestDist = maxRadiusPx;
+        const worldPos = new THREE.Vector3();
+        const toMarker = new THREE.Vector3();
+
+        for (const marker of meshes) {
+            marker.getWorldPosition(worldPos);
+            toMarker.subVectors(worldPos, planetPos).normalize();
+            if (toMarker.dot(toCam) <= 0.05) continue;
+
+            const proj = worldPos.clone().project(camera);
+            const sx = rect.left + (proj.x * 0.5 + 0.5) * rect.width;
+            const sy = rect.top + (-proj.y * 0.5 + 0.5) * rect.height;
+            const d = Math.hypot(sx - lastClientX, sy - lastClientY);
+            if (d < bestDist) {
+                bestDist = d;
+                best = marker;
+            }
+        }
+        return best;
+    }
+
     /**
      * Click Raycast for Swap / Explore
      */
-    function handlePointerClick() {
+    function handlePointerClick(isTouch = false) {
         if (!camera || showStage !== 'off') return;
         raycaster.setFromCamera(mouseVector, camera);
 
@@ -1256,31 +1352,58 @@ const MODEL_CONFIGS = {
             if (planetEntrance < 0.6) return;
 
             const intersects = raycaster.intersectObjects([moonMesh, marsMesh], false);
+            const useTwoStepTap = isTouch || isPortraitMobile();
 
             if (intersects.length > 0) {
                 const hitBody = intersects[0].object.userData.body;
 
-                if (hitBody === activeForeground) {
+                if (useTwoStepTap) {
+                    if (hitBody !== activeForeground) {
+                        swapForeground(hitBody);
+                        hoveredPlanet = hitBody;
+                        targets.moonGlow = hitBody === 'Moon' ? 1.0 : 0.0;
+                        targets.marsGlow = hitBody === 'Mars' ? 1.0 : 0.0;
+                        updateAstronautCaption();
+                    } else if (hoveredPlanet !== hitBody) {
+                        hoveredPlanet = hitBody;
+                        targets.moonGlow = hitBody === 'Moon' ? 1.0 : 0.0;
+                        targets.marsGlow = hitBody === 'Mars' ? 1.0 : 0.0;
+                        updateAstronautCaption();
+                    } else {
+                        enterExploreMode(hitBody);
+                    }
+                } else if (hitBody === activeForeground) {
                     // Clicked foreground -> Expand to full screen!
                     enterExploreMode(hitBody);
                 } else {
                     // Clicked background -> Swap forward!
                     swapForeground(hitBody);
                 }
+            } else if (useTwoStepTap) {
+                targets.moonGlow = 0.0;
+                targets.marsGlow = 0.0;
+                if (hoveredPlanet !== null) {
+                    hoveredPlanet = null;
+                    updateAstronautCaption();
+                }
             }
         } else {
             const currentMeshes = currentBody === 'Moon' ? moonMarkerMeshes : marsMarkerMeshes;
             const intersects = raycaster.intersectObjects(currentMeshes, true);
 
+            let hit = null;
             if (intersects.length > 0) {
-                let hit = intersects[0].object;
+                hit = intersects[0].object;
                 while (hit && !hit.userData.artifact && hit.parent) {
                     hit = hit.parent;
                 }
-                if (hit && hit.userData.artifact) {
-                    currentSelectedMarkerIndex = hit.userData.index || 0;
-                    openArtifactCard(hit.userData.artifact, hit);
-                }
+            }
+            if (!hit || !hit.userData.artifact) {
+                hit = findNearestScreenMarker(currentMeshes, isTouch || isPortraitMobile() ? 46 : 20);
+            }
+            if (hit && hit.userData.artifact) {
+                currentSelectedMarkerIndex = hit.userData.index || 0;
+                openArtifactCard(hit.userData.artifact, hit);
             }
         }
     }
@@ -1475,7 +1598,14 @@ const MODEL_CONFIGS = {
         camera.aspect = w / h;
         camera.updateProjectionMatrix();
 
-        updateAstronautTarget(activeForeground);
+        if (viewMode === 'overview') {
+            swapForeground(activeForeground);
+        } else {
+            if (showStage === 'off') {
+                targets.cameraPos.z = getExploreCameraZ();
+            }
+            updateAstronautTarget(activeForeground);
+        }
         updateTeamLogoTransform();
 
         if (showStage === 'story') {
@@ -1831,6 +1961,7 @@ const MODEL_CONFIGS = {
         }
         if (!marker) return;
 
+        playVehicleSound();
         const token = ++showToken;
         const begin = templates => {
             if (token === showToken && showStage === 'off') beginShowcase(artifact, marker, templates);
@@ -1914,6 +2045,7 @@ const MODEL_CONFIGS = {
     /** "Discover the story": the card fades, the model floats right, the astronaut enters, the text appears. */
     function startStory() {
         if (showStage !== 'focus') return;
+        stopVehicleSound();
         buildStoryPages();
         storyPageIndex = 0;
         renderStoryPage();
@@ -1959,6 +2091,7 @@ const MODEL_CONFIGS = {
     function closeShowcase(immediate) {
         if (showStage === 'off') return;
         if (showStage !== 'closing') {
+            stopVehicleSound();
             clearTimeout(storyTimer);
             stopTypeWriter();
             storyBusy = false;
@@ -2925,15 +3058,6 @@ const MODEL_CONFIGS = {
             elements.btnBackToOverview.setAttribute('aria-label', backLabel);
             elements.btnBackToOverview.setAttribute('title', backLabel);
         }
-        if (elements.btnMobileSources) {
-            elements.btnMobileSources.textContent = t('mobileSourcesBtn', targetLang);
-        }
-        if (elements.mobileSourcesPopover) {
-            elements.mobileSourcesPopover.setAttribute('aria-label', t('mobileSourcesBtn', targetLang));
-        }
-        if (elements.mobileSourcesDisclaimer) {
-            elements.mobileSourcesDisclaimer.textContent = t('disclaimer', targetLang);
-        }
         if (elements.stageAttribution) {
             elements.stageAttribution.textContent = t('attributionOfficial', targetLang);
         }
@@ -2993,14 +3117,6 @@ const MODEL_CONFIGS = {
         elements.langToggle.addEventListener('click', () => {
             setLanguage(currentLang === 'ar' ? 'en' : 'ar', { announce: true });
         });
-
-        if (elements.btnMobileSources && elements.mobileSourcesPopover) {
-            elements.btnMobileSources.addEventListener('click', () => {
-                const isOpen = !elements.mobileSourcesPopover.classList.contains('hidden');
-                elements.mobileSourcesPopover.classList.toggle('hidden', isOpen);
-                elements.btnMobileSources.setAttribute('aria-expanded', isOpen ? 'false' : 'true');
-            });
-        }
 
         window.addEventListener('scroll', onWindowScroll, { passive: true });
 
@@ -3093,6 +3209,12 @@ const MODEL_CONFIGS = {
                 handleBackNavigation();
             }
         });
+
+        document.addEventListener('click', e => {
+            const btn = e.target && e.target.closest ? e.target.closest('button, [role="button"]') : null;
+            if (!btn || btn.disabled || btn.getAttribute('aria-disabled') === 'true') return;
+            playButtonSound();
+        }, true);
     }
 
     function init() {
