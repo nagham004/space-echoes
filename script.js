@@ -2851,6 +2851,16 @@ const MODEL_CONFIGS = {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
 
+            // Seamlessly cover baked-in placeholder labels with adjacent starry background
+            const patchAreas = [
+                { x: 196, w: 124 }, // [DATE]
+                { x: 438, w: 162 }, // [CERTIFICATE ID]
+                { x: 720, w: 205 }  // [COORDINATOR NAME]
+            ];
+            patchAreas.forEach(area => {
+                ctx.drawImage(img, area.x, 626, area.w, 24, area.x, 600, area.w, 24);
+            });
+
             // Draw the participant's name centered on the certificate
             ctx.save();
             ctx.textAlign = 'center';
@@ -2860,6 +2870,30 @@ const MODEL_CONFIGS = {
             ctx.shadowColor = 'rgba(0, 0, 0, 0.85)';
             ctx.shadowBlur = 12;
             ctx.fillText(userName, canvas.width / 2, canvas.height * 0.545);
+            ctx.restore();
+
+            // Draw today's date, random Certificate ID, and Coordinator
+            const todayStr = new Date().toLocaleDateString('en-GB', {
+                day: '2-digit',
+                month: 'short',
+                year: 'numeric'
+            });
+            const randChars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+            let randCode = '';
+            for (let i = 0; i < 6; i++) {
+                randCode += randChars.charAt(Math.floor(Math.random() * randChars.length));
+            }
+            const certId = `SK-${randCode}`;
+
+            ctx.save();
+            ctx.textAlign = 'left';
+            ctx.textBaseline = 'middle';
+            ctx.fillStyle = '#eef4ff';
+            ctx.font = '600 15px "IBM Plex Sans Arabic", Arial, sans-serif';
+            ctx.fillText(todayStr, 201, 613);
+            ctx.fillText(certId, 444, 613);
+            ctx.font = '600 14px "IBM Plex Sans Arabic", Arial, sans-serif';
+            ctx.fillText('The Space Keepers Team', 726, 613);
             ctx.restore();
 
             const dataUrl = canvas.toDataURL('image/png');
