@@ -146,6 +146,7 @@ const MODEL_CONFIGS = {
 
     // Scrollytelling Entrance State
     let scrollProgress = 0.0;
+    let savedOverviewScrollY = 0;
     let planetEntrance = 0.0;
     let footerOverlap = 0.0;
 
@@ -210,6 +211,7 @@ const MODEL_CONFIGS = {
         heroChallengeBadge: document.getElementById('hero-challenge-badge'),
         heroChallengeTitle: document.getElementById('hero-challenge-title'),
         heroTeamLogo: document.getElementById('hero-team-logo'),
+        heroLogoSpacer: document.querySelector('.hero-logo-spacer'),
         stageAttribution: document.getElementById('stage-attribution'),
         btnMobileSources: document.getElementById('btn-mobile-sources'),
         mobileSourcesPopover: document.getElementById('mobile-sources-popover'),
@@ -266,6 +268,9 @@ const MODEL_CONFIGS = {
 
         const w = logo.offsetWidth || 320;
         const h = logo.offsetHeight || 180;
+        if (elements.heroLogoSpacer && logo.offsetHeight > 0) {
+            elements.heroLogoSpacer.style.height = `${Math.ceil(h) + 12}px`;
+        }
         const vw = window.innerWidth || 1280;
         const vh = window.innerHeight || 800;
 
@@ -273,7 +278,12 @@ const MODEL_CONFIGS = {
         const ease = 1 - Math.pow(1 - tRaw, 3);
 
         const startX = vw / 2;
-        const startY = Math.max(28, vh * 0.09) + h / 2;
+        let startY = Math.max(28, vh * 0.09) + h / 2;
+        if (elements.heroTitleContent) {
+            const contentHeight = elements.heroTitleContent.offsetHeight;
+            const contentTop = Math.max(16, (vh - contentHeight) / 2);
+            startY = contentTop + 20 + h / 2;
+        }
         const startScale = 1;
 
         const isMobile = vw <= 768;
@@ -871,6 +881,7 @@ const MODEL_CONFIGS = {
      * Enter Explore Mode: Expands the planet to full screen
      */
     function enterExploreMode(body) {
+        savedOverviewScrollY = Math.max(window.scrollY || window.pageYOffset || 0, Math.round(window.innerHeight * 0.85));
         viewMode = 'explore';
         currentBody = body;
         currentSelectedMarkerIndex = 0;
@@ -940,7 +951,7 @@ const MODEL_CONFIGS = {
 
         updateAstronautCaption();
         updateStageAttributionVisibility();
-        elements.spaceCanvas.focus();
+        elements.spaceCanvas.focus({ preventScroll: true });
     }
 
     /**
@@ -972,10 +983,20 @@ const MODEL_CONFIGS = {
         const strings = uiText[currentLang];
         elements.spaceCanvas.setAttribute('aria-label', strings.overviewSphereAria);
 
+        const targetScrollY = Math.max(savedOverviewScrollY, Math.round(window.innerHeight * 0.85));
+        window.scrollTo({ top: targetScrollY, behavior: 'instant' });
         onWindowScroll();
         updateAstronautCaption();
         updateStageAttributionVisibility();
-        elements.spaceCanvas.focus();
+        elements.spaceCanvas.focus({ preventScroll: true });
+    }
+
+    function handleBackNavigation() {
+        if (showStage !== 'off') {
+            closeShowcase();
+        } else if (viewMode === 'explore') {
+            exitExploreMode();
+        }
     }
 
     function rotateActivePlanetToMarker(mesh) {
@@ -2899,8 +2920,10 @@ const MODEL_CONFIGS = {
         elements.mainDesc.textContent = t('siteDesc', targetLang);
 
         if (elements.btnBackToOverview) {
+            const backLabel = isAr ? 'رجوع' : 'Back';
             elements.btnBackToOverview.textContent = t('backToPlanets', targetLang);
-            elements.btnBackToOverview.setAttribute('aria-label', isAr ? 'العودة لنظرة الكواكب' : 'Back to Planets Overview');
+            elements.btnBackToOverview.setAttribute('aria-label', backLabel);
+            elements.btnBackToOverview.setAttribute('title', backLabel);
         }
         if (elements.btnMobileSources) {
             elements.btnMobileSources.textContent = t('mobileSourcesBtn', targetLang);
@@ -2944,6 +2967,7 @@ const MODEL_CONFIGS = {
         renderSiteCredits(targetLang);
         refreshShowcaseText();
         updateStageAttributionVisibility();
+        updateTeamLogoTransform();
 
         try {
             localStorage.setItem('spaceEchoesLang', targetLang);
@@ -2990,7 +3014,7 @@ const MODEL_CONFIGS = {
         }
 
         if (elements.btnBackToOverview) {
-            elements.btnBackToOverview.addEventListener('click', exitExploreMode);
+            elements.btnBackToOverview.addEventListener('click', handleBackNavigation);
         }
 
         // Story Drawer controls
@@ -3066,11 +3090,7 @@ const MODEL_CONFIGS = {
 
         window.addEventListener('keydown', e => {
             if (e.key === 'Escape') {
-                if (showStage !== 'off') {
-                    closeShowcase();
-                } else if (viewMode === 'explore') {
-                    exitExploreMode();
-                }
+                handleBackNavigation();
             }
         });
     }

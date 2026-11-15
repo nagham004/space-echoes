@@ -7,7 +7,8 @@
     <title>تُركت في صمت، خُلِّدت في العلم | Space Echoes</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet">
     <!-- Three.js r128 from CDN -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <!-- Three.js Starfield 3D Celestial Background -->
@@ -31,19 +32,22 @@
 
     <!-- Top navigation bar -->
     <nav class="top-nav" aria-label="الشريط العلوي">
-        <button id="btn-back-to-overview" class="back-nav-btn hidden" aria-label="العودة لنظرة الكواكب">→ نظرة عامة على الكواكب</button>
+        <button id="btn-back-to-overview" class="back-nav-btn hidden" aria-label="رجوع" title="رجوع">→</button>
         <button id="lang-toggle" class="lang-btn" aria-label="Switch language to English">
-            <svg class="lang-globe-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <svg class="lang-globe-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+                stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                 <circle cx="12" cy="12" r="9.5"></circle>
                 <path d="M2.5 12h19"></path>
                 <path d="M12 2.5a14.5 14.5 0 0 1 0 19 14.5 14.5 0 0 1 0-19z"></path>
             </svg>
             <span id="lang-toggle-label">العربية</span>
-            <svg class="lang-chevron-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <svg class="lang-chevron-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                 <polyline points="6 9 12 15 18 9"></polyline>
             </svg>
         </button>
-        <button id="btn-mobile-sources" class="mobile-sources-btn hidden" type="button" aria-expanded="false" aria-controls="mobile-sources-popover">المصادر</button>
+        <button id="btn-mobile-sources" class="mobile-sources-btn hidden" type="button" aria-expanded="false"
+            aria-controls="mobile-sources-popover">المصادر</button>
     </nav>
 
     <!-- Team Logo (Centered & large on Hero, shrinks smoothly to corner on scroll) -->
@@ -56,7 +60,8 @@
             <span id="astronaut-caption-text" class="caption-text">آثار خالدة على تربة فضية</span>
         </div>
         <!-- Accessible description for 3D Astronaut Model -->
-        <div id="astronaut-a11y" role="img" aria-label="رائد فضاء ناسا يطفو في الفضاء بجانب الكوكب" class="sr-only"></div>
+        <div id="astronaut-a11y" role="img" aria-label="رائد فضاء ناسا يطفو في الفضاء بجانب الكوكب" class="sr-only">
+        </div>
         <canvas id="space-canvas" tabindex="0" role="img"
             aria-label="عرض تفاعلي ثلاثي الأبعاد للقمر والمريخ. مرر الفأرة على القمر ليتوهج، انقر على المريخ لتبديل موضعه، أو انقر على الجرم للتكبير والاستكشاف."></canvas>
         <!-- Floating Tooltip for 3D Surface Markers -->
@@ -64,7 +69,8 @@
         <!-- Accessible Keyboard Navigation for Artifacts -->
         <nav id="a11y-artifacts-nav" class="sr-only" aria-label="قائمة المركبات الفضائية المستكشفة"></nav>
         <!-- Fixed Bottom Attribution for Moon/Mars/Showcase Stages -->
-        <div id="stage-attribution" class="stage-attribution hidden" lang="en" dir="ltr">Powered by NASA Open Data &amp; 3D Assets</div>
+        <div id="stage-attribution" class="stage-attribution hidden" lang="en" dir="ltr">Powered by NASA Open Data &amp;
+            3D Assets</div>
         <div id="mobile-sources-popover" class="mobile-sources-popover hidden" role="region" aria-label="المصادر">
             <p class="mobile-sources-official" lang="en" dir="ltr">Powered by NASA Open Data &amp; 3D Assets</p>
             <p id="mobile-sources-disclaimer" class="mobile-sources-disclaimer">هذا المشروع غير مُعتمد من ناسا</p>
@@ -79,12 +85,13 @@
                 <div class="hero-logo-spacer" aria-hidden="true"></div>
                 <div class="hero-challenge-block">
                     <span id="hero-challenge-badge" class="hero-challenge-badge">تحدي ناسا</span>
-                    <p id="hero-challenge-title" class="hero-challenge-title">مهجورة لكن غير منسية: سرد قصص معدات ناسا المتروكة على القمر والمريخ</p>
+                    <p id="hero-challenge-title" class="hero-challenge-title">مهجورة لكن غير منسية: سرد قصص معدات ناسا
+                        المتروكة على القمر والمريخ</p>
                 </div>
                 <h1 id="main-title">تُركت في صمت، <span class="hero-title-highlight">خُلِّدت في العلم</span></h1>
                 <p id="main-desc">ما زالت آثار بعثات ناسا شاهدة على أعظم مغامرات الإنسان خارج الأرض.</p>
                 <div class="scroll-down-hint">
-                    <span class="scroll-text" id="scroll-prompt">اكتشف ما بقي هناك</span>
+                    <span class="scroll-text" id="scroll-prompt">تتبع خُطانا بين النجوم</span>
                     <span class="scroll-arrow" aria-hidden="true">↓</span>
                 </div>
             </div>
@@ -100,7 +107,8 @@
     </div>
 
     <!-- Artifact showcase: close button, summary card and paged story text (all on the left) -->
-    <section id="artifact-drawer" class="artifact-drawer hidden" aria-labelledby="artifact-title" role="dialog" aria-modal="true">
+    <section id="artifact-drawer" class="artifact-drawer hidden" aria-labelledby="artifact-title" role="dialog"
+        aria-modal="true">
         <button id="btn-close-drawer" class="close-btn" type="button" aria-label="إغلاق">×</button>
         <div id="story-scrim" class="story-scrim" aria-hidden="true"></div>
 
@@ -134,14 +142,16 @@
                     <span class="story-progress-track"><span class="story-progress-fill"></span></span>
                 </div>
                 <div class="story-actions">
-                    <button id="btn-voice-toggle" class="voice-toggle-btn" type="button" aria-pressed="true" aria-label="إيقاف صوت رائد الفضاء" title="صوت رائد الفضاء">🔊</button>
+                    <button id="btn-voice-toggle" class="voice-toggle-btn" type="button" aria-pressed="true"
+                        aria-label="إيقاف صوت رائد الفضاء" title="صوت رائد الفضاء">🔊</button>
                     <button id="btn-story-next" class="story-next-btn primary-btn" type="button"></button>
                 </div>
             </div>
         </div>
 
         <!-- Quiz Container (shown after clicking "اختبر معلوماتك" on the last story slide) -->
-        <div id="quiz-container" class="quiz-container hidden" role="region" aria-live="polite" aria-label="اختبار المعلومات">
+        <div id="quiz-container" class="quiz-container hidden" role="region" aria-live="polite"
+            aria-label="اختبار المعلومات">
             <div class="quiz-header">
                 <span id="quiz-badge" class="quiz-badge">اختبر معلوماتك</span>
                 <span id="quiz-progress" class="quiz-progress">1 / 3</span>
@@ -158,13 +168,16 @@
         </div>
 
         <!-- Certificate Container (shown when user scores 3/3) -->
-        <div id="certificate-container" class="certificate-container hidden" role="region" aria-live="polite" aria-label="إصدار الشهادة">
+        <div id="certificate-container" class="certificate-container hidden" role="region" aria-live="polite"
+            aria-label="إصدار الشهادة">
             <span class="quiz-badge" id="cert-badge">إنجاز رائع · 3 / 3</span>
             <h3 id="cert-title" class="cert-title">تهانينا! لقد أتممت الاختبار بنجاح</h3>
-            <p id="cert-subtitle" class="cert-subtitle">أدخل اسمك لإصدار وتحميل شهادة التميز الخاصة بك من فريق The Space Keepers.</p>
+            <p id="cert-subtitle" class="cert-subtitle">أدخل اسمك لإصدار وتحميل شهادة التميز الخاصة بك من فريق The Space
+                Keepers.</p>
             <div class="cert-form">
                 <label for="cert-name-input" id="cert-name-label" class="sr-only">الاسم الكامل</label>
-                <input id="cert-name-input" class="cert-input" type="text" maxlength="48" placeholder="اكتب اسمك هنا..." autocomplete="name" />
+                <input id="cert-name-input" class="cert-input" type="text" maxlength="48" placeholder="اكتب اسمك هنا..."
+                    autocomplete="name" />
                 <p id="cert-error" class="cert-error hidden" role="alert"></p>
                 <div class="cert-actions">
                     <button id="btn-generate-cert" class="primary-btn" type="button">إصدار وتحميل الشهادة</button>
